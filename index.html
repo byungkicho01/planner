@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261029084736 -->
+<!-- Master Financial Planner, hosted build 20261031123743 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -966,6 +966,11 @@ main:focus { outline: none; }
 .sync-form menu .spacer { flex: 1; }
 .sync-cmp { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; }
 @media (max-width: 560px) { .sync-form { padding: 16px; } .sync-kv { grid-template-columns: 1fr; gap: 2px; } .sync-kv dd { margin-bottom: 8px; } .sync-form menu .spacer { display: none; } }
+.sync-other { border: 1px solid var(--rule); border-radius: var(--radius-m); padding: 12px 14px; display: grid; gap: 8px; background: var(--surface-2); }
+.sync-other h3 { margin: 0; font-size: 14px; }
+.sync-other ol { margin: 0; padding-left: 20px; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.sync-link { width: 100%; box-sizing: border-box; font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: var(--ink-2); }
+.sync-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -7235,9 +7240,6 @@ function viewNetWorth() {
   h += `<div style="display:grid;gap:24px">
     ${homes.length ? `<div class="h-panel"><header><h2>Home equity</h2></header><div class="h-wrap"><table class="h-table"><thead><tr><th>Property</th><th class="n">Value</th><th class="n">Mortgage</th><th class="n">Equity</th><th class="n">Loan to value</th></tr></thead><tbody>
       ${homes.map(x => `<tr><td>${esc(x.a.name)}</td><td class="n">${money(x.v)}</td><td class="n">${money(x.d, null, { dash: true })}</td><td class="n"><b>${money(x.eq)}</b></td><td class="n">${x.v ? pct(x.d / x.v) : '–'}</td></tr>`).join('')}</tbody></table></div></div>` : ''}
-    <div class="h-panel"><header><h2>Currency</h2><span class="spacer"></span><span class="h-faint small">${cur.lookThrough ? 'investments looked through' : 'by account currency'}</span></header>
-      <table class="h-table"><tbody>${cur.rows.map(r => `<tr><td>${esc(r.k)}</td><td class="n">${money(r.v)}</td><td class="n">${pct(r.v / cur.tot)} of assets</td></tr>`).join('')}</tbody></table>
-      ${cur.usdDebt > 0.5 ? `<p class="h-note">USD debts of ${money(cur.usdDebt)} offset part of the USD assets: net USD ${money(cur.usdNet)} (${pct(M.nw ? cur.usdNet / M.nw : null)} of net worth).</p>` : ''}</div>
     <div class="h-panel"><header><h2>${esc(mlong(ui.month))} at a glance</h2></header><dl class="kv" style="margin:0">
       <dt>Income</dt><dd>${f ? money(f.inc) : '<span class="h-faint">no transactions</span>'}</dd>
       <dt>Spending</dt><dd>${f ? money(f.sp) : '–'}</dd>
@@ -7248,6 +7250,7 @@ function viewNetWorth() {
       ${st.notes[ui.month] ? `<dt>Note</dt><dd>${esc(st.notes[ui.month])}</dd>` : ''}
     </dl></div>
   </div></div>`;
+  h += currencyPanel(M, cur);
   if (!ui.table) h += `<div class="h-panel"><header><h2>Month by month</h2></header>${historyTable(months.slice(-13), fl)}</div>`;
   return h;
 }
@@ -7261,24 +7264,42 @@ function historyTable(months, fl) {
   }).join('');
   return `<div class="h-wrap"><table class="h-table"><thead><tr><th>Month</th><th class="n">Net worth</th><th class="n">Change</th><th class="n">Saved from income</th><th class="n">Exchange rates</th><th class="n">Markets &amp; other</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
-// currency split of assets; investments looked through when the Investments mode has the month
+// Currency exposure: assets, liabilities and the net per currency. Assets are split by what they hold when the
+// Investments mode has the month (a US fund listed in Canada counts as USD; options at market value, so a short box
+// spread is negative USD); liabilities count in their account's currency. Net per currency adds up to net worth.
+const FUND_OTHER = 'Other currencies (inside funds)';
 function currencyMix(M) {
-  const by = {}; let usdDebt = 0, lookThrough = false;
+  const A = {}, L = {}; let lookThrough = false;
   const R = CTX.R, liveYm = CTX.live && CTX.live.ym;
+  const add = (o, k, v) => { o[k] = (o[k] || 0) + v; };
   for (const r of M.rows) {
-    if (r.liab) { if (r.ccy === 'USD') usdDebt += r.cad; continue; }
+    if (r.liab) { add(L, r.ccy || 'CAD', r.cad); continue; }
     if (r.acc.links && r.acc.links.length && r.src === 'live' && R && M.ym === liveYm) {
       let tot = 0; const parts = {};
-      // net = holdings + options at market value (a short box spread is negative USD)
       for (const l of r.acc.links) for (const [k, v] of Object.entries((R.ccyByAccount || {})[l] || {})) { const n = v.gross + (v.hedge || 0); parts[k] = (parts[k] || 0) + n; tot += n; }
-      if (Object.keys(parts).length && Math.abs(tot) > 0.5) { lookThrough = true; const f = r.cad / tot; for (const [k, v] of Object.entries(parts)) { const kk = k === 'USD' || k === 'CAD' ? k : 'Other'; by[kk] = (by[kk] || 0) + v * f; } continue; }
+      if (Object.keys(parts).length && Math.abs(tot) > 0.5) {
+        lookThrough = true; const f = r.cad / tot;
+        for (const [k, v] of Object.entries(parts)) add(A, k === 'USD' || k === 'CAD' ? k : FUND_OTHER, v * f);
+        continue;
+      }
     }
-    const k = r.ccy === 'CAD' || r.ccy === 'USD' ? r.ccy : 'Other';
-    by[k] = (by[k] || 0) + r.cad;
+    add(A, r.ccy || 'CAD', r.cad);
   }
-  const tot = Object.values(by).reduce((a, b) => a + b, 0) || 1;
-  const rows = Object.entries(by).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
-  return { rows, tot, usdDebt, usdNet: (by.USD || 0) - usdDebt, lookThrough };
+  const keys = [...new Set([...Object.keys(A), ...Object.keys(L)])].filter(k => Math.abs(A[k] || 0) > 0.5 || Math.abs(L[k] || 0) > 0.5);
+  const rank = k => (k === 'CAD' ? 0 : k === 'USD' ? 1 : k === FUND_OTHER ? 3 : 2);
+  const rows = keys.map(k => ({ k, a: A[k] || 0, l: L[k] || 0, n: (A[k] || 0) - (L[k] || 0) })).sort((x, y) => rank(x.k) - rank(y.k) || y.n - x.n);
+  const ta = rows.reduce((t, r) => t + r.a, 0), tl = rows.reduce((t, r) => t + r.l, 0);
+  return { rows, ta, tl, tn: ta - tl, lookThrough };
+}
+function currencyPanel(M, cur) {
+  if (!cur.rows.length) return '';
+  const nw = cur.tn, share = v => (nw > 0.5 ? pct(v / nw) : '–');
+  const body = cur.rows.map(r => `<tr><td>${esc(r.k)}</td><td class="n">${money(r.a, null, { dash: true })}</td><td class="n">${r.l > 0.5 ? money(-r.l) : '<span class="h-faint">–</span>'}</td>
+    <td class="n"><b>${money(r.n)}</b></td><td class="n">${share(r.n)}</td><td class="n h-faint">${cur.ta > 0.5 && Math.abs(r.a) > 0.5 ? pct(r.a / cur.ta) : ''}</td></tr>`).join('');
+  return `<div class="h-panel" style="margin-top:24px"><header><h2>Currency exposure</h2><span class="spacer"></span><span class="h-faint small">assets, debts and the net in each currency${cur.lookThrough ? ' · investments looked through' : ''}</span></header>
+    <div class="h-wrap"><table class="h-table h-ccy"><thead><tr><th>Currency</th><th class="n">Assets</th><th class="n">Liabilities</th><th class="n">Net</th><th class="n" title="Net in this currency as a share of net worth">% of net worth</th><th class="n" title="Assets in this currency as a share of all assets">% of assets</th></tr></thead>
+    <tbody>${body}<tr class="total"><td>Total</td><td class="n">${money(cur.ta)}</td><td class="n">${cur.tl > 0.5 ? money(-cur.tl) : '–'}</td><td class="n">${money(cur.tn)}</td><td class="n">${nw > 0.5 ? '100%' : '–'}</td><td class="n h-faint">100%</td></tr></tbody></table></div>
+    <p class="h-note">Net = assets minus debts in that currency; the nets add up to your net worth. Debts count in their account's currency (a CAD mortgage lowers your CAD exposure, a USD loan your USD exposure).${cur.lookThrough ? " Investment accounts are split by what their funds hold; options count at market value, so a short box spread shows as negative USD." : ''}</p></div>`;
 }
 
 function staleNote() {
@@ -8194,8 +8215,12 @@ function renderDialog() {
         <dt>Drive copy</dt><dd>${meta.pass ? 'Locked with your passphrase' : 'Not locked with a passphrase'}</dd></dl>
       ${detail && status !== 'idle' && status !== 'syncing' ? `<p class="sync-note ${tone()}">${esc(detail)}</p>` : ''}
       ${status === 'pass' ? `<label>Passphrase for the Drive copy<input type="password" id="syncPass" autocomplete="current-password"></label><menu style="justify-content:flex-start"><button class="btn primary" data-sync="unlock">Unlock</button></menu>` : ''}
-      <p class="small">On your other devices, open <a href="${esc(location.origin + location.pathname)}" target="_blank" rel="noopener">${esc(location.host + location.pathname)}</a> and turn on sync with the same Google account.
-        <button class="linkbtn" data-sync="link">Copy a setup link</button> (it fills in the sign-in ID).</p>
+      <section class="sync-other" aria-labelledby="syncOtherT"><h3 id="syncOtherT">Add your phone or another device</h3>
+        <ol><li>Send this link to the other device (copy it, or use Send on a phone or Mac).</li>
+          <li>Open it in Chrome there: the sync screen opens with the sign-in ID already filled in.</li>
+          <li>Tap <b>Turn on sync</b> and pick the same Google account${meta.pass ? ', then type your passphrase' : ''}.</li></ol>
+        <input type="text" class="sync-link" id="syncLink" readonly value="${esc(setupLink())}" aria-label="Setup link for another device">
+        <div class="sync-row"><button class="btn" data-sync="link">Copy link</button>${navigator.share ? '<button class="btn" data-sync="share">Send…</button>' : ''}</div></section>
       <p class="sync-err" id="syncErr" role="alert"></p>
       <menu><button class="btn" data-sync="close">Close</button><button class="btn primary" data-sync="now" ${status === 'syncing' ? 'disabled' : ''}>Sync now</button></menu>
       <p class="sync-more"><button class="linkbtn" data-sync="off">Turn off sync on this device</button> · <button class="linkbtn sync-danger" data-sync="remove">Remove the Drive copy</button></p>`;
@@ -8217,6 +8242,8 @@ function bindDialog(d) {
     if (a === 'on') { turnOn(d); return; }
     if (a === 'now') { await tapSync(); if (status === 'idle' && window.Shell) window.Shell.toast('Synced.'); return; }
     if (a === 'unlock') { const v = ($('#syncPass', d) || {}).value || ''; if (!v) { showErr('Type the passphrase.'); return; } meta.pass = v; saveMeta(); await tapSync(); return; }
+    if (a === 'share') { try { await navigator.share({ title: 'Master Financial Planner: turn on sync', url: setupLink() }); } catch (x) { /* closed */ } return; }
+    if (a === 'link') { const f = $('#syncLink', d); if (f) { f.focus(); f.select(); } }
     if (a === 'link') { const l = setupLink(); try { await navigator.clipboard.writeText(l); window.Shell.toast('Setup link copied. Open it on your other device, for example with Chrome\'s Send to your devices.'); } catch (x) { prompt('Setup link:', l); } return; }
     if (a === 'off') { turnOff(); window.Shell.toast('Sync is off on this device. Its data stays here.'); return; }
     if (a === 'remove') { removeCopy(); return; }
