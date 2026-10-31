@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261031123743 -->
+<!-- Master Financial Planner, hosted build 20261031170746 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -972,6 +972,30 @@ main:focus { outline: none; }
 .sync-link { width: 100%; box-sizing: border-box; font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: var(--ink-2); }
 .sync-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* add / edit a transaction by hand (Income & spending) */
+.txform { display: grid; gap: 14px; }
+.txform .txdir { justify-self: start; }
+.txform .txdir button[aria-pressed="true"] { background: var(--btn-ink); color: var(--btn-ink-text); }
+.txgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.txgrid label { display: grid; gap: 5px; font-size: 12.5px; color: var(--ink-2); font-weight: 500; min-width: 0; }
+.txgrid label.wide { grid-column: 1 / -1; }
+.txgrid input[type=text], .txgrid select { width: 100%; box-sizing: border-box; }
+.txgrid .df { display: flex; } .txgrid .df input.df-text { flex: 1; width: auto; min-width: 0; }
+#txAmt { text-align: right; font-variant-numeric: tabular-nums; }
+.txerr { margin: 0 !important; color: var(--out) !important; font-size: 13px; }
+.txerr:empty { display: none; }
+@media (max-width: 560px) { .txgrid { grid-template-columns: 1fr; } .txform .txdir { justify-self: stretch; } .txform .txdir button { flex: 1; } }
+.tx-tag { display: inline-block; margin-right: 7px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px; vertical-align: 1px;
+  color: var(--focus); background: color-mix(in srgb, var(--focus) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--focus) 35%, transparent); }
+.tx-note { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 12.5px; color: var(--ink-2); max-width: 46ch; }
+.tx-note svg { width: 13px; height: 13px; flex: none; color: var(--ink-3); }
+.tx-note span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iconbtn.notebtn { color: var(--ink-3); }
+.iconbtn.notebtn.on { color: var(--focus); border-color: color-mix(in srgb, var(--focus) 45%, var(--rule-strong)); }
+#genDialog textarea, .txgrid textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 60px; padding: 7px 9px; border: 1px solid var(--rule-strong); border-radius: var(--radius-s); background: var(--surface); }
+.notelabel { display: grid; gap: 5px; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+@media (max-width: 980px) { .tbl.txtbl .tx-note { max-width: none; } }
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#182033">
@@ -1034,6 +1058,7 @@ main:focus { outline: none; }
       <header class="topbar">
         <h1 id="viewTitle">Dashboard</h1>
         <div class="filters hidden" id="filters"></div>
+        <button class="btn" data-act="addtx" title="Add a cash purchase or anything not in your statements"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Add transaction</button>
         <button class="btn primary" data-act="import"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10.5V2.5M4.5 6L8 2.5 11.5 6M2.5 10.5v3h11v-3"/></svg>Import files</button>
         <input type="file" id="fileInput" multiple accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm,.ods,.ofx,.qfx,.qbo" hidden>
       </header>
@@ -5326,6 +5351,7 @@ start();
   const plural = (n, one, many) => `${n.toLocaleString('en-CA')} ${n === 1 ? one : (many || one + 's')}`;
   const trunc = (s, n) => { s = String(s ?? ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   const ICON = {
+    note: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5h7.5L13 5v8.5H3z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>',
     check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
     trash: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4"/></svg>',
     list: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg>',
@@ -5666,7 +5692,7 @@ start();
       <h2>See where your money goes</h2>
       <p>Load the transaction files you download from your bank and credit card websites. The app sorts each transaction into your categories and adds up income against spending. When it guesses wrong, correct it once and it remembers that merchant from then on.</p>
       <div class="dropzone"><b>Drop CSV, Excel, TSV or OFX files here</b><span class="muted">or</span><button class="btn primary" data-act="import">${ICON.upload}Choose files</button></div>
-      <p class="small muted">Everything stays on this computer: this file never connects to the internet and nothing is uploaded. Want to look around first? <button class="linkbtn" data-act="sample">Load sample data</button>. Moving from another computer or browser? <button class="linkbtn" data-act="restore">Restore a backup</button>.</p>
+      <p class="small muted">Everything stays on this computer: this file never connects to the internet and nothing is uploaded. Want to look around first? <button class="linkbtn" data-act="sample">Load sample data</button>. Moving from another computer or browser? <button class="linkbtn" data-act="restore">Restore a backup</button>. Paying cash? <button class="linkbtn" data-act="addtx">Add a transaction by hand</button>.</p>
       <div class="steps">
         <div><b>Import your files</b><p class="muted">It finds the date, description and amount columns, and remembers each bank's layout for next time.</p></div>
         <div><b>Review the guesses</b><p class="muted">Guessed categories are highlighted. Confirm them or pick the right one, and the app learns the merchant.</p></div>
@@ -5902,10 +5928,12 @@ start();
     if (f.merchant) list = list.filter(t => t.key === f.merchant);
     if (f.q) {
       const q = f.q.toUpperCase().trim();
-      list = list.filter(t => t.desc.toUpperCase().includes(q) || t.account.toUpperCase().includes(q) || catName(t.cat).toUpperCase().includes(q) || Math.abs(t.amount).toFixed(2).includes(q));
+      list = list.filter(t => t.desc.toUpperCase().includes(q) || t.account.toUpperCase().includes(q) || catName(t.cat).toUpperCase().includes(q) || Math.abs(t.amount).toFixed(2).includes(q) || (t.note || '').toUpperCase().includes(q) || (t.manual && 'MANUAL ENTRY'.includes(q)));
     }
     if (f.cat === 'review') list = list.filter(needsReview);
     else if (f.cat === 'uncat') list = list.filter(t => !t.cat);
+    else if (f.cat === 'manual') list = list.filter(t => t.manual);
+    else if (f.cat === 'notes') list = list.filter(t => t.note);
     else if (f.cat !== 'all') list = list.filter(t => t.cat === f.cat);
     if (f.flow === 'in') list = list.filter(t => t.amount > 0);
     else if (f.flow === 'out') list = list.filter(t => t.amount < 0);
@@ -5923,11 +5951,13 @@ start();
     const f = ui.tx;
     return `
       <div class="toolbar">
-        <input type="search" id="txSearch" placeholder="Search description, account, amount" value="${esc(f.q)}" aria-label="Search">
+        <input type="search" id="txSearch" placeholder="Search description, account, amount, note" value="${esc(f.q)}" aria-label="Search">
         <select data-tx="cat" aria-label="Category filter">
           <option value="all">All categories</option>
           <option value="review"${f.cat === 'review' ? ' selected' : ''}>Needs review</option>
           <option value="uncat"${f.cat === 'uncat' ? ' selected' : ''}>Uncategorized</option>
+          <option value="manual"${f.cat === 'manual' ? ' selected' : ''}>Manual entries</option>
+          <option value="notes"${f.cat === 'notes' ? ' selected' : ''}>With a note</option>
           ${catOptions(f.cat, { includeNone: false })}
         </select>
         <select data-tx="flow" aria-label="Direction">
@@ -5961,8 +5991,8 @@ start();
       return `<tr data-id="${t.id}" class="${ui.sel.has(t.id) ? 'sel' : ''}">
         <td class="check"><input type="checkbox" data-sel aria-label="Select" ${ui.sel.has(t.id) ? 'checked' : ''}></td>
         <td class="date">${fdate(t.date)}</td>
-        <td class="desc"><span class="desc-main" title="${esc(t.desc)}">${esc(t.desc)}</span><span class="desc-sub">${esc(t.account)}<span class="tx-date"> · ${fdate(t.date)}</span></span></td>
-        <td class="cat"><div class="catcell"><select class="catsel ${cls}" data-cat aria-label="Category" title="${esc(why)}">${catOptions(t.cat)}</select>${nr && t.cat ? `<button class="iconbtn ok" data-confirm title="Confirm this category" aria-label="Confirm">${ICON.check}</button>` : ''}</div></td>
+        <td class="desc"><span class="desc-main" title="${esc(t.desc)}">${t.manual ? '<span class="tx-tag" title="Added by hand, not from an imported statement">Manual entry</span>' : ''}${esc(t.desc)}</span><span class="desc-sub">${esc(t.account)}<span class="tx-date"> · ${fdate(t.date)}</span></span>${t.note ? `<span class="tx-note" title="${esc(t.note)}">${ICON.note}<span>${esc(t.note)}</span></span>` : ''}</td>
+        <td class="cat"><div class="catcell"><select class="catsel ${cls}" data-cat aria-label="Category" title="${esc(why)}">${catOptions(t.cat)}</select>${nr && t.cat ? `<button class="iconbtn ok" data-confirm title="Confirm this category" aria-label="Confirm">${ICON.check}</button>` : ''}<button class="iconbtn notebtn${t.note ? ' on' : ''}" data-notetx title="${t.note ? 'Edit the note' : 'Add a note'}" aria-label="${t.note ? 'Edit the note on' : 'Add a note to'} ${esc(t.desc)}">${ICON.note}</button>${t.manual ? `<button class="iconbtn" data-edittx title="Edit this manual entry" aria-label="Edit ${esc(t.desc)}">✎</button>` : ''}</div></td>
         <td class="amt ${t.amount > 0 ? 'in' : ''}">${fmSigned(t.amount)}</td>
       </tr>`;
     };
@@ -6588,8 +6618,8 @@ start();
     inp.click();
   }
   function exportTx() {
-    const head = ['Date', 'Account', 'Description', 'Merchant', 'Category', 'Category type', 'Amount', 'Confirmed'];
-    const lines = [...S.transactions].sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.account, t.desc, t.key, t.cat ? catName(t.cat) : '', t.cat ? TYPE_LABEL[catType(t.cat)] : '', t.amount.toFixed(2), t.src === 'manual' ? 'yes' : 'no'].map(csvCell).join(','));
+    const head = ['Date', 'Account', 'Description', 'Merchant', 'Category', 'Category type', 'Amount', 'Confirmed', 'Source', 'Note'];
+    const lines = [...S.transactions].sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.account, t.desc, t.key, t.cat ? catName(t.cat) : '', t.cat ? TYPE_LABEL[catType(t.cat)] : '', t.amount.toFixed(2), t.src === 'manual' ? 'yes' : 'no', t.manual ? 'Manual entry' : 'Imported', t.note || ''].map(csvCell).join(','));
     download(`tally-transactions-${stamp()}.csv`, '﻿' + [head.join(','), ...lines].join('\r\n'), 'text/csv');
   }
   function exportPivot() {
@@ -6604,6 +6634,95 @@ start();
   }
 
   // ======================= dialogs & toasts =======================
+  // ======================= add / edit a transaction by hand =======================
+  // Cash purchases and anything else that isn't in a statement. Saved like imported ones (counted in totals, budgets,
+  // review and sync), marked manual: true, so they can be edited or deleted here and are never removed with an import.
+  function txDialog(t) {
+    const d = $('#genDialog');
+    const dir0 = t ? (t.amount > 0 ? 'in' : 'out') : (ui.lastDir || 'out');
+    const acct0 = t ? t.account : (S.settings.lastManualAccount || 'Cash');
+    const accts = [...new Set(['Cash', ...accounts()])];
+    d.innerHTML = `<div class="dlg-head"><h3>${t ? 'Edit transaction' : 'Add a transaction'}</h3></div>
+      <form class="dlg-body txform" novalidate onsubmit="return false">
+        <div class="segmented txdir" role="group" aria-label="Money in or out"><button type="button" data-dir="out" aria-pressed="${dir0 === 'out'}">Money out</button><button type="button" data-dir="in" aria-pressed="${dir0 === 'in'}">Money in</button></div>
+        <div class="txgrid">
+          <label>Date${DateField.html({ id: 'txDate', value: t ? t.date : DateField.todayIso(), label: 'Date' })}</label>
+          <label>Amount<input type="text" id="txAmt" inputmode="decimal" autocomplete="off" placeholder="0.00" value="${t ? esc(Math.abs(t.amount).toFixed(2)) : ''}"></label>
+          <label class="wide">Description<input type="text" id="txDesc" autocomplete="off" placeholder="e.g. Farmers market" value="${t ? esc(t.desc) : ''}"></label>
+          <label>Category<select id="txCat">${catOptions(t ? t.cat : null, { placeholder: 'Choose later (Review)' })}</select></label>
+          <label>Account<input type="text" id="txAcct" list="txAccts" autocomplete="off" value="${esc(acct0)}"><datalist id="txAccts">${accts.map(a => `<option value="${esc(a)}">`).join('')}</datalist></label>
+          <label class="wide"><span>Note <span class="muted" style="font-weight:400">(optional)</span></span><textarea id="txNoteIn" rows="2" maxlength="500" placeholder="e.g. Reimbursed by work">${t && t.note ? esc(t.note) : ''}</textarea></label>
+        </div>
+        <p class="txerr" id="txErr" role="alert"></p>
+      </form>
+      <div class="dlg-foot">${t ? '<button class="btn danger left" data-txact="delete">Delete</button>' : ''}
+        <button class="btn" data-txact="cancel">Cancel</button>${t ? '' : '<button class="btn" data-txact="again">Add and start another</button>'}<button class="btn primary" data-txact="save">${t ? 'Save' : 'Add'}</button></div>`;
+    let dir = dir0;
+    const err = m => { $('#txErr', d).textContent = m; };
+    const read = () => {
+      const date = DateField.parse($('#txDate', d).value, { today: DateField.todayIso() });
+      const pa = C.parseAmount($('#txAmt', d).value); const amt = Math.abs(pa && typeof pa === 'object' ? pa.v : pa);
+      const desc = $('#txDesc', d).value.trim(), account = $('#txAcct', d).value.trim() || 'Cash', cat = $('#txCat', d).value || null;
+      if (!date) { err('Enter the date, like 2026-10-31 or Oct 31.'); $('#txDate', d).focus(); return null; }
+      if (!(amt > 0) || !isFinite(amt)) { err('Enter the amount, like 45.00.'); $('#txAmt', d).focus(); return null; }
+      if (!desc) { err('Describe it, like "Farmers market".'); $('#txDesc', d).focus(); return null; }
+      return { date, amount: Math.round((dir === 'out' ? -amt : amt) * 100) / 100, desc, account, cat, note: $('#txNoteIn', d).value.trim() };
+    };
+    const save = again => {
+      const v = read(); if (!v) return;
+      let x = t;
+      if (!x) { x = { id: C.uid('t'), importId: null, manual: true, addedAt: Date.now(), cat: null, src: 'none', conf: 0 }; S.transactions.push(x); }
+      const catBefore = t ? t.cat : null;
+      Object.assign(x, { date: v.date, amount: v.amount, desc: v.desc, account: v.account, key: C.merchantKey(v.desc) });
+      if (v.note) x.note = v.note; else delete x.note;
+      if (v.cat && (v.cat !== catBefore || x.src !== 'manual')) assign([x.id], v.cat);
+      else if (!v.cat) { x.cat = null; x.src = 'none'; x.conf = 0; C.recategorize(S); scheduleSave(); }
+      else scheduleSave();
+      S.settings.lastManualAccount = v.account; ui.lastDir = dir;
+      render(); renderBadge();
+      toast(`${t ? 'Saved' : 'Added'}: ${v.desc}, ${fmSigned(v.amount)}${x.cat ? ` (${catName(x.cat)})` : ', category to choose in Review'}.`);
+      if (again) { txDialog(null); return; }
+      d.close();
+    };
+    d.onclick = e => {
+      const db = e.target.closest('[data-dir]');
+      if (db) { dir = db.dataset.dir; $$('[data-dir]', d).forEach(b => b.setAttribute('aria-pressed', String(b === db))); return; }
+      const b = e.target.closest('[data-txact]'); if (!b) return;
+      const a = b.dataset.txact;
+      if (a === 'cancel') { d.close(); return; }
+      if (a === 'save' || a === 'again') { save(a === 'again'); return; }
+      if (a === 'delete' && t) {
+        const at = S.transactions.indexOf(t);
+        S.transactions = S.transactions.filter(x => x !== t); ui.sel.delete(t.id); scheduleSave(); d.close(); render(); renderBadge();
+        toast(`Deleted ${t.desc}.`, { action: { label: 'Undo', fn: () => { S.transactions.splice(Math.min(at, S.transactions.length), 0, t); scheduleSave(); render(); renderBadge(); toast('Transaction restored.'); } } });
+      }
+    };
+    d.onkeydown = e => { if (e.key === 'Enter' && (e.target.matches('input') && !e.target.closest('.df') || (e.target.matches('textarea') && (e.metaKey || e.ctrlKey)))) { e.preventDefault(); save(false); } };
+    d.oncancel = null;
+    if (!d.open) d.showModal();
+    (t ? $('#txAmt', d) : $('#txAmt', d)).focus();
+  }
+
+  // a note on any transaction (imported or manual): shown under its description, searchable, exported, synced
+  function noteDialog(t) {
+    const d = $('#genDialog');
+    d.innerHTML = `<div class="dlg-head"><h3>${t.note ? 'Edit note' : 'Add a note'}</h3></div>
+      <div class="dlg-body"><p class="small muted" style="margin:0 0 10px">${t.manual ? 'Manual entry · ' : ''}${esc(t.desc)} · ${esc(t.account)} · ${fdate(t.date)} · ${fmSigned(t.amount)}</p>
+        <label class="notelabel">Note<textarea id="txNote" rows="4" maxlength="500" placeholder="e.g. Reimbursed by work, or split with a friend">${esc(t.note || '')}</textarea></label></div>
+      <div class="dlg-foot">${t.note ? '<button class="btn danger left" data-nact="remove">Remove note</button>' : ''}<button class="btn" data-nact="cancel">Cancel</button><button class="btn primary" data-nact="save">Save note</button></div>`;
+    const put = v => { if (v) t.note = v; else delete t.note; scheduleSave(); d.close(); render(); toast(v ? 'Note saved.' : 'Note removed.'); };
+    d.onclick = e => {
+      const b = e.target.closest('[data-nact]'); if (!b) return;
+      if (b.dataset.nact === 'cancel') d.close();
+      else if (b.dataset.nact === 'remove') put('');
+      else put($('#txNote', d).value.trim());
+    };
+    d.onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); put($('#txNote', d).value.trim()); } };
+    d.oncancel = null;
+    if (!d.open) d.showModal();
+    const ta = $('#txNote', d); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+
   function modal({ title, body, actions }) {
     return new Promise(resolve => {
       const d = $('#genDialog');
@@ -6662,6 +6781,7 @@ start();
       if (!actBtn) return;
       const a = actBtn.dataset.act;
       if (a === 'import') fileInput.click();
+      else if (a === 'addtx') txDialog(null);
       else if (a === 'sample') loadSample();
       else if (a === 'backup') backup();
       else if (a === 'restore') restore();
@@ -6750,6 +6870,10 @@ start();
       if (sortTh) { const k = sortTh.dataset.sort; if (ui.tx.sort === k) ui.tx.dir *= -1; else { ui.tx.sort = k; ui.tx.dir = k === 'date' || k === 'amount' ? -1 : 1; } renderTxTable(); return; }
       const pg = t.closest('[data-page]');
       if (pg) { ui.tx.page += +pg.dataset.page; renderTxTable(); window.scrollTo(0, 0); return; }
+      const nb = t.closest('[data-notetx]');
+      if (nb) { const tx = txById(nb.closest('tr').dataset.id); if (tx) noteDialog(tx); return; }
+      const ed = t.closest('[data-edittx]');
+      if (ed) { const tx = txById(ed.closest('tr').dataset.id); if (tx) txDialog(tx); return; }
       const conf = t.closest('[data-confirm]');
       if (conf) { const id = conf.closest('tr').dataset.id; const tx = txById(id); if (tx && tx.cat) { assign([id], tx.cat); render(); toast(`Confirmed ${catName(tx.cat)} for ${tx.key}.`); } return; }
       // categories
