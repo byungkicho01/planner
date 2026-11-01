@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261031175536 -->
+<!-- Master Financial Planner, hosted build 20261031190724 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -818,7 +818,7 @@ th.tk-rel { position: relative; }
   .tbl.txtbl thead tr { display: flex; align-items: center; gap: 2px; }
   .tbl.txtbl thead th { position: static; border: 0; padding: 10px 8px; background: none; box-shadow: none !important; }
   .tbl.txtbl thead th.amt { margin-left: auto; }
-  .tbl.txtbl tbody tr { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; grid-template-areas: "chk desc amt" "chk cat cat"; align-items: center; column-gap: 12px; row-gap: 8px; padding: 12px 12px 12px 10px; border-bottom: 1px solid var(--rule); }
+  .tbl.txtbl tbody tr { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; grid-template-areas: "chk desc amt" "cat cat cat"; align-items: center; column-gap: 12px; row-gap: 8px; padding: 12px 12px 12px 10px; border-bottom: 1px solid var(--rule); }
   .tbl.txtbl tbody tr:last-child { border-bottom: 0; }
   .tbl.txtbl tbody tr.sel { background: color-mix(in srgb, var(--focus) 7%, var(--surface)); }
   .tbl.txtbl tbody tr.sel td { background: none; }
@@ -1015,6 +1015,98 @@ main:focus { outline: none; }
 @media (max-width: 560px) { .delrange { display: grid; grid-template-columns: 1fr 1fr; } .delrange .wide { grid-column: 1 / -1; } .delrange select { min-width: 0; width: 100%; }
   form[data-form=mergecat] select { flex: 1 1 100%; } }
 
+/* Everything > History: every account, month by month */
+.h-hist-stats { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: var(--ink-2); margin: -2px 0 10px; }
+.h-hist-stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.h-hist-wrap { overflow-x: auto; }
+table.h-hist { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 13px; }
+table.h-hist th, table.h-hist td { padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.h-hist th { font-weight: 500; color: var(--ink-3); font-size: 12px; text-align: right; border-bottom-color: var(--rule-strong); background: var(--surface); }
+table.h-hist th:first-child, table.h-hist td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; min-width: 200px; max-width: 260px; white-space: normal;
+  box-shadow: 1px 0 0 var(--rule); }
+table.h-hist td.n { text-align: right; }
+table.h-hist td.h-carry { color: var(--ink-3); font-style: italic; }
+table.h-hist tr.h-hist-side td { background: var(--surface-2); font-weight: 600; }
+table.h-hist tr.h-hist-side.liab td:first-child .h-hist-lbl { color: var(--out); }
+table.h-hist tr.h-hist-side.asset td:first-child .h-hist-lbl { color: var(--in); }
+table.h-hist tr.h-hist-grp td { font-weight: 600; color: var(--ink-2); }
+table.h-hist tr.h-hist-acc td:first-child { padding-left: 34px; }
+table.h-hist tr.total td { font-weight: 600; border-top: 1px solid var(--rule-strong); border-bottom: 0; }
+table.h-hist tr.h-hist-chg td { color: var(--ink-2); font-size: 12.5px; border-bottom: 0; }
+table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { background: var(--surface-2); }
+.h-hist-lbl { border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.h-hist-lbl:hover { text-decoration: underline; }
+.h-hist-lbl.on { box-shadow: inset 0 -2px 0 var(--hl-edge); }
+.h-hist-tog { border: 0; background: none; padding: 0 6px 0 0; width: 22px; cursor: pointer; color: var(--ink-3); font: inherit; }
+.h-hist-m { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.h-hist-m:hover { color: var(--ink); text-decoration: underline; }
+@media (max-width: 560px) { table.h-hist th:first-child, table.h-hist td:first-child { min-width: 140px; max-width: 170px; } table.h-hist tr.h-hist-acc td:first-child { padding-left: 12px; } }
+@media (pointer: coarse), (max-width: 760px) { .h-hist-lbl { display: inline-flex; align-items: center; min-height: 32px; min-width: 32px; } .h-hist-tog { width: 30px; min-height: 32px; } table.h-hist th, table.h-hist td { padding-top: 2px; padding-bottom: 2px; } }
+
+/* paused because the app is open in another window */
+.win-guard { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: blur(3px); }
+.win-card { max-width: 440px; background: var(--surface); border: 1px solid var(--rule-strong); border-radius: var(--radius-m); padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,.18); }
+.win-card h2 { margin: 0 0 8px; font: 600 18px/1.3 "Plex", sans-serif; }
+.win-card p { margin: 0 0 16px; color: var(--ink-2); }
+
+/* edit / split a transaction, amounts in another currency (Income & spending) */
+.tx-tag.edited { color: var(--ink-2); background: var(--surface-2); border-color: var(--rule-strong); }
+.amt-sub { display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 400; }
+.splitchip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; flex: 1 1 auto; height: 32px; padding: 0 10px; border: 1px dashed var(--rule-strong); border-radius: var(--radius-s); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+.splitchip svg { width: 14px; height: 14px; flex: none; color: var(--ink-3); }
+.splitchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.splitchip:hover { border-color: var(--ink-3); }
+.txorig { margin: 0 !important; font-size: 13px; color: var(--ink-2); padding: 9px 12px; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--rule); }
+.txcatbox { display: grid; gap: 6px; }
+.txcatbox > label { display: grid; gap: 5px; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.txcatbox select { width: 100%; box-sizing: border-box; }
+.spl-toggle { justify-self: start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.spl-toggle svg { width: 14px; height: 14px; }
+.splitbox { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--rule-strong); border-radius: var(--radius-s); background: var(--surface-2); }
+.splithead { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.splitrow { display: grid; grid-template-columns: 1fr 120px auto; gap: 8px; align-items: center; }
+.splitrow select, .splitrow input { width: 100%; box-sizing: border-box; min-width: 0; }
+.splitrow input { text-align: right; font-variant-numeric: tabular-nums; }
+.splitfoot { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.spleft.ok { color: var(--in); } .spleft.bad { color: var(--out); }
+@media (max-width: 560px) { .splitrow { grid-template-columns: 1fr 96px auto; } }
+
+/* Income & spending > Trends */
+.tr-tools { gap: 14px; }
+.tr-head { margin: 0 0 12px; font-size: 14px; line-height: 1.6; max-width: 90ch; }
+.tr-head b.out, .trtbl td.out { color: var(--out); }
+.tr-head b.in, .trtbl td.in { color: var(--in); }
+.trtbl tr.click { cursor: pointer; }
+.trtbl tr.click:hover td { background: var(--surface-2); }
+.trtbl tr.sel td { background: var(--hl-soft); }
+.trtbl tr.total td { font-weight: 600; }
+.tr-chart { height: 280px; padding: 0; }
+
+/* backup and restore dialogs */
+.bkform { display: grid; gap: 12px; }
+.bkform p { margin: 0; }
+.bkform label:not(.inline) { display: grid; gap: 5px; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.bkform input[type=password] { width: 100%; box-sizing: border-box; }
+.bkpass { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--rule); border-radius: var(--radius-s); background: var(--surface-2); }
+.bkpass[hidden] { display: none; }
+.rp-h { margin: 20px 0 4px; font: 600 14px/1.3 "Plex", sans-serif; }
+.rp-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--rule); border-radius: var(--radius-s); max-height: 46vh; overflow-y: auto; }
+.rp-list li { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+.rp-list li:last-child { border-bottom: 0; }
+.rp-list li > div { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: 13.5px; }
+.rp-list li > div span { font-size: 12.5px; color: var(--ink-3); }
+.rp-none { color: var(--ink-3); font-size: 13.5px; margin: 0; }
+
+/* Everything > Returns, and contributions */
+.h-table input.h-ct { width: 100px; }
+.ctform { display: grid; gap: 12px; }
+.ctfill { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--radius-s); background: var(--surface-2); font-size: 13px; }
+.ctfill input { width: 110px; text-align: right; }
+.ctfill label { display: inline-flex; align-items: center; gap: 6px; }
+.ctlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; max-height: 50vh; overflow-y: auto; padding-right: 4px; }
+.ctlist label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.ctlist input { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#182033">
@@ -1038,7 +1130,9 @@ main:focus { outline: none; }
     </div>
     <nav class="nav" id="navAll" data-for="all" aria-label="Everything">
       <button data-hgo="networth">Net worth</button>
+      <button data-hgo="history">History</button>
       <button data-hgo="balances">Update balances</button>
+      <button data-hgo="returns">Returns</button>
       <button data-hgo="ratios">Ratios</button>
       <button data-hgo="plan">Plan vs actual</button>
       <button data-hgo="accounts">Accounts</button>
@@ -1048,6 +1142,7 @@ main:focus { outline: none; }
       <button data-go="dashboard">Dashboard</button>
       <button data-go="review">Review <span class="badge" id="reviewBadge"></span></button>
       <button data-go="transactions">Transactions</button>
+      <button data-go="trends">Trends</button>
       <button data-go="categories">Categories &amp; budgets</button>
       <button data-go="learning">Rules &amp; learning</button>
       <button data-go="data">Accounts &amp; data</button>
@@ -1106,6 +1201,7 @@ main:focus { outline: none; }
 <dialog id="mapDialog" aria-label="Import file"></dialog>
 <dialog id="genDialog" class="narrow"></dialog>
 <dialog id="homeDlg" class="narrow"></dialog>
+<dialog id="shellDlg" class="narrow"></dialog>
 <div id="toasts" aria-live="polite" aria-atomic="false"></div>
 <div id="dropOverlay"><div>Drop files to import</div></div>
 <noscript><p style="padding:24px">Master Financial Planner needs JavaScript to run.</p></noscript>
@@ -3048,7 +3144,8 @@ const Core = (() => {
   const dedupeKey = t => `${t.account.trim().toUpperCase()}|${t.date}|${Math.round(t.amount * 100)}|${t.desc.toUpperCase().normalize('NFD').replace(/[^A-Z0-9]/g, '')}`;
   function splitDuplicates(existing, incoming) {
     const have = new Map();
-    existing.forEach(t => { const k = dedupeKey(t); have.set(k, (have.get(k) || 0) + 1); });
+    // a transaction you edited still matches what its statement says
+    existing.forEach(t => { const k = dedupeKey(t.orig ? Object.assign({}, t, t.orig) : t); have.set(k, (have.get(k) || 0) + 1); });
     const seen = new Map(), fresh = [], dups = [];
     incoming.forEach(t => {
       const k = dedupeKey(t);
@@ -3443,7 +3540,7 @@ H.PLAN_DEFAULT = PROFILE.plan || {
 H.SETTINGS_DEFAULT = { owners: Object.assign({ J: 'Me', C: 'Partner', JC: 'Joint' }, PROFILE.owners || {}), haircuts: { crypto: 50, equity: 20, retire: 50 }, ccy: 'CAD', lastBackup: null };
 
 H.fresh = (invAccounts) => {
-  const st = { version: 1, settings: JSON.parse(JSON.stringify(H.SETTINGS_DEFAULT)), accounts: [], balances: {}, fx: {}, notes: {},
+  const st = { version: 1, settings: JSON.parse(JSON.stringify(H.SETTINGS_DEFAULT)), accounts: [], balances: {}, fx: {}, notes: {}, contrib: {},
     plan: JSON.parse(JSON.stringify(H.PLAN_DEFAULT)), imports: [], createdAt: Date.now() };
   const keyToId = {};
   for (const [name, inst, cat, ccy, owner, extra = {}] of TEMPLATE) {
@@ -3460,7 +3557,7 @@ H.migrate = (st, invAccounts) => {
   st.settings = Object.assign(JSON.parse(JSON.stringify(H.SETTINGS_DEFAULT)), st.settings || {});
   st.settings.owners = Object.assign({}, H.SETTINGS_DEFAULT.owners, st.settings.owners || {});
   st.settings.haircuts = Object.assign({}, H.SETTINGS_DEFAULT.haircuts, st.settings.haircuts || {});
-  for (const k of ['balances', 'fx', 'notes']) if (!st[k] || typeof st[k] !== 'object') st[k] = {};
+  for (const k of ['balances', 'fx', 'notes', 'contrib']) if (!st[k] || typeof st[k] !== 'object') st[k] = {};
   if (!Array.isArray(st.imports)) st.imports = [];
   st.plan = Object.assign(JSON.parse(JSON.stringify(H.PLAN_DEFAULT)), st.plan || {});
   for (const a of st.accounts) { if (!Array.isArray(a.links)) a.links = []; }
@@ -3563,6 +3660,56 @@ H.firstMonth = (st, ctx) => {
   return first;
 };
 H.series = (st, months, ctx) => months.map(m => H.month(st, m, ctx));
+
+// ===================================================================== investment returns
+// From month-end values and what you put in each month (st.contrib[ym][accountId], in the account's currency; negative
+// for a withdrawal). Each stretch between two month-end values earns  g = V1 - V0 - C  on  V0 + C/2  (contributions
+// assumed mid-way: modified Dietz), and the stretches chain into a time-weighted return. Everything in C$.
+H.INVEST_GROUPS = ['invest', 'retire', 'crypto'];
+H.isInvest = acc => H.INVEST_GROUPS.includes((H.CATS[acc.cat] || {}).group);
+H.contribOf = (st, ym, id) => { const m = st.contrib && st.contrib[ym]; const v = m ? H.num(m[id]) : null; return v === null ? 0 : v; };
+H.returns = (st, months, ctx) => {
+  const all = months.length ? [H.addMonths(months[0], -1)].concat(months) : [];
+  const per = [];
+  for (const a of st.accounts.filter(H.isInvest)) {
+    const ccy = a.links && a.links.length ? 'CAD' : a.ccy;
+    const fxAt = m => H.fxFor(st, m, ccy, ctx);
+    // a value carried forward from an earlier month isn't a new reading, so it's left out (the stretch spans the gap)
+    const V = all.map(m => { const v = H.valueOf(st, a, m, ctx); if (!v || v.src === 'carried') return null; const fx = fxAt(m); return fx === null ? null : v.v * fx; });
+    const C = all.map(m => { const c = H.contribOf(st, m, a.id); if (!c) return 0; const fx = fxAt(m); return fx === null ? 0 : c * fx; });
+    const s = V.findIndex(v => v !== null);
+    if (s < 0) continue;
+    let e = s, prev = s, pending = 0, contrib = 0, growth = 1, any = false;
+    const step = all.map(() => null);
+    for (let i = s + 1; i < all.length; i++) {
+      pending += C[i];
+      if (V[i] === null) continue;
+      const g = V[i] - V[prev] - pending, base = V[prev] + 0.5 * pending;
+      step[i] = { g, base, c: pending };
+      if (base > 0.5) { growth *= 1 + g / base; any = true; }
+      contrib += pending; pending = 0; prev = i; e = i;
+    }
+    const start = V[s], end = V[e], n = e - s;
+    per.push({ acc: a, ccy, start, end, contrib, gain: end - start - contrib, twr: any ? growth - 1 : null, ann: any && n > 12 ? Math.pow(growth, 12 / n) - 1 : null,
+      n, s, e, startYm: all[s], endYm: all[e], V, C, step });
+  }
+  // all accounts together: values and contributions add up; each month's growth is the sum over accounts
+  let growth = 1, any = false;
+  // for the chart: each account's latest reading up to that month (so an account without a new balance still counts)
+  for (const r of per) { let lastV = null; r.held = all.map((m, i) => (i < r.s ? null : (r.V[i] !== null ? (lastV = r.V[i]) : lastV))); }
+  const value = all.map((m, i) => { let t = 0, has = false; for (const r of per) if (r.held[i] !== null) { t += r.held[i]; has = true; } return has ? t : null; });
+  const putIn = all.map((m, i) => { let t = 0, has = false; for (const r of per) if (i >= r.s) { has = true; t += r.start; for (let j = r.s + 1; j <= Math.min(i, r.e); j++) t += r.C[j]; } return has ? t : null; });
+  for (let i = 1; i < all.length; i++) {
+    let G = 0, B = 0;
+    for (const r of per) if (r.step[i]) { G += r.step[i].g; B += r.step[i].base; }
+    if (B > 0.5) { growth *= 1 + G / B; any = true; }
+  }
+  const first = per.length ? Math.min(...per.map(r => r.s)) : 0, last = per.length ? Math.max(...per.map(r => r.e)) : 0, n = last - first;
+  const sum = k => per.reduce((t, r) => t + r[k], 0);
+  const total = { start: sum('start'), end: sum('end'), contrib: sum('contrib'), gain: sum('gain'), twr: any ? growth - 1 : null, ann: any && n > 12 ? Math.pow(growth, 12 / n) - 1 : null, n };
+  const entered = Object.values(st.contrib || {}).some(m => Object.values(m || {}).some(v => H.num(v)));
+  return { months: all, per, total, value, putIn, entered };
+};
 
 // Month-over-month change, split into saved from income, currency moves and everything else (markets, home values, ...)
 H.change = (st, ym, ctx, flows) => {
@@ -4011,6 +4158,34 @@ SC.unpack = async (text, pass) => {
   return { doc, enc: !!env.enc };
 };
 
+// ---- the same sealing for other files: protected backups ({mfp:'backup', ...}) and restore points (gzip only)
+SC.canGzip = typeof root.CompressionStream === 'function' && typeof root.DecompressionStream === 'function';
+SC.gzip = async str => { const b = enc.encode(str); return SC.canGzip ? pipe(b, root.CompressionStream) : b; };
+SC.gunzip = async (bytes, gz) => dec.decode(gz ? await pipe(bytes, root.DecompressionStream) : bytes);
+SC.seal = async (doc, pass, kind = 'backup') => {
+  let bytes = await SC.gzip(JSON.stringify(doc));
+  const env = { mfp: kind, v: 1, enc: !!pass, gz: SC.canGzip };
+  if (pass) {
+    const salt = root.crypto.getRandomValues(new Uint8Array(16)), iv = root.crypto.getRandomValues(new Uint8Array(12));
+    const key = await keyFrom(pass, salt, SC.ITER);
+    bytes = new Uint8Array(await subtle().encrypt({ name: 'AES-GCM', iv }, key, bytes));
+    Object.assign(env, { salt: b64(salt), iv: b64(iv), iter: SC.ITER });
+  }
+  env.data = b64(bytes);
+  return JSON.stringify(env);
+};
+SC.isSealed = obj => !!(obj && typeof obj === 'object' && obj.mfp === 'backup' && typeof obj.data === 'string');
+SC.unseal = async (obj, pass) => {
+  let bytes = unb64(obj.data || '');
+  if (obj.enc) {
+    if (!pass) throw fail('need-pass', 'This backup is protected with a passphrase.');
+    try { const key = await keyFrom(pass, unb64(obj.salt), obj.iter || SC.ITER); bytes = new Uint8Array(await subtle().decrypt({ name: 'AES-GCM', iv: unb64(obj.iv) }, key, bytes)); }
+    catch (e) { throw fail('bad-pass', "That passphrase doesn't open this backup."); }
+  }
+  if (obj.gz && typeof root.DecompressionStream !== 'function') throw fail('format', "This browser can't read compressed backups. Update it and try again.");
+  return JSON.parse(await SC.gunzip(bytes, obj.gz));
+};
+
 SC.deviceName = ua => {
   ua = ua || '';
   if (/iPhone/.test(ua)) return 'iPhone';
@@ -4233,7 +4408,8 @@ const pct = (f, d = 1) => f === null || f === undefined || !isFinite(f) ? '–' 
 const pctH = (f, d = 1) => { if (f === null || f === undefined || !isFinite(f)) return '<span class="faint">–</span>'; if (Math.abs(f) < 0.00005) return '<span class="faint">–</span>'; const s = pct(f, d); return f < 0 ? `<span class="neg">${s}</span>` : s; };
 const dateLabel = iso => { if (!iso) return '–'; const d = new Date(iso + 'T12:00:00Z'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); };
 const ccyLabel = () => S.ccy;
-function toast(msg) { if (window.Shell && window.Shell.mode === 'inv') window.Shell.toast(msg); } // data-refresh notes only matter while you're looking at investments
+function toast(msg) { if (window.Shell && window.Shell.mode === 'inv') window.Shell.toast(msg); }
+const undoToast = (msg, fn) => { if (window.Shell) window.Shell.toast(msg, { action: { label: 'Undo', fn: () => { fn(); window.Shell.toast('Undone.'); } } }); }; // data-refresh notes only matter while you're looking at investments
 
 // ===================================================================== render: chrome
 function renderStatus(busyMsg) {
@@ -5228,11 +5404,27 @@ function bind() {
       upsertSnapshot(C.snapshot(all, 'manual')); save(); render(); toast(`Snapshot saved for ${dateLabel(S.valDate)}`); return;
     }
     if (e.target.closest('#snapEstimate')) { estimateHistory(); return; }
-    if (e.target.closest('#snapClearEst')) { state.history = (state.history || []).filter(h => h.kind !== 'estimate'); save(); render(); toast('Estimates removed'); return; }
-    const ds = e.target.closest('[data-delsnap]'); if (ds) { state.history = (state.history || []).filter(h => h.date !== ds.dataset.delsnap); save(); render(); return; }
+    if (e.target.closest('#snapClearEst')) {
+      const before = (state.history || []).slice(), n = before.filter(h => h.kind === 'estimate').length;
+      state.history = before.filter(h => h.kind !== 'estimate'); save(); render();
+      undoToast(`Removed ${n} estimate${n === 1 ? '' : 's'}.`, () => { state.history = before; save(); render(); });
+      return;
+    }
+    const ds = e.target.closest('[data-delsnap]');
+    if (ds) {
+      const before = (state.history || []).slice();
+      state.history = before.filter(h => h.date !== ds.dataset.delsnap); save(); render();
+      undoToast(`Deleted the ${dateLabel(ds.dataset.delsnap)} snapshot.`, () => { state.history = before; save(); render(); });
+      return;
+    }
     const add = e.target.closest('[data-addto]'); if (add) { addHoldingDialog(add.dataset.addto); return; }
     if (e.target.closest('#addAccount, [data-addacct]')) { addAccountDialog(); return; }
-    if (e.target.closest('#boxReset')) { delete state.settings.box; save(); render(); toast('Calculator inputs reset'); return; }
+    if (e.target.closest('#boxReset')) {
+      const before = state.settings.box ? JSON.parse(JSON.stringify(state.settings.box)) : undefined;
+      delete state.settings.box; save(); render();
+      undoToast('Calculator inputs reset.', () => { if (before) state.settings.box = before; save(); render(); });
+      return;
+    }
     const es = e.target.closest('[data-editsec]'); if (es) { editSecDialog(es.dataset.editsec); return; }
     const mv = e.target.closest('[data-move]');
     if (mv) { const p = state.positions.find(x => x.id === mv.dataset.move); if (p) moveDialog(p.accountId, p.id); return; }
@@ -5242,7 +5434,9 @@ function bind() {
       const p = state.positions.find(x => x.id === del.dataset.del);
       const sec = p && C.getSec(p.secId, state);
       openDialog(`<form><h2>Remove ${esc(sec ? sec.symbol : 'holding')}?</h2><p class="muted">Its entered value is removed too.</p><menu><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="ok">Remove</button></menu></form>`, () => {
+        const before = state.positions.slice();
         state.positions = state.positions.filter(x => x.id !== del.dataset.del); save(); recompute(); render();
+        undoToast(`Removed ${sec ? sec.symbol : 'the holding'}.`, () => { state.positions = before; save(); recompute(); render(); });
       });
       return;
     }
@@ -5256,7 +5450,8 @@ function bind() {
     if (e.target.closest('#clearCache')) { M = { px: {}, curve: {}, div: {} }; Store.set('market', M); recompute(); render(); toast('Market data cleared'); refreshMarket(true); }
     if (e.target.closest('#resetBtn')) {
       openDialog(`<form><h2>Reset to your holdings list?</h2><p class="muted">All entered values, added holdings and fund edits are cleared. Download a backup first if you may want them back.</p><menu><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="ok">Reset</button></menu></form>`, () => {
-        state = C.seedState(); save(); recompute(); render(); toast('Reset');
+        const go = () => { state = C.seedState(); save(); recompute(); render(); toast('Reset. A restore point of what was here is in Restore.'); };
+        if (window.Shell && window.Shell.restorePoint) window.Shell.restorePoint('Before resetting investments').finally(go); else go();
       });
     }
   });
@@ -5375,6 +5570,8 @@ start();
     trash: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4"/></svg>',
     list: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg>',
     upload: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10.5V2.5M4.5 6L8 2.5 11.5 6M2.5 10.5v3h11v-3"/></svg>',
+    split: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h4l3-4.5h4M6.5 8l3 4.5h4M11.5 1.5l2 2-2 2M11.5 10.5l2 2-2 2"/></svg>',
+    edit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.5l3 3-8 8H2.5v-3z"/><path d="M9 4l3 3"/></svg>',
     merge: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5v2.5c0 2.2 5 3 5 6v2.5M13 2.5v2.5c0 2.2-5 3-5 6"/><path d="M5.8 11.2L8 13.5l2.2-2.3"/></svg>',
     download: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M2.5 10.5v3h11v-3"/></svg>',
   };
@@ -5391,7 +5588,7 @@ start();
   const ui = {
     view: 'dashboard', range: [null, null], charts: {}, sel: new Set(),
     tx: { page: 0, sort: 'date', dir: -1, q: '', cat: 'all', flow: 'all', merchant: '' },
-    review: 'all', memQ: '', memPage: 0, dash: null,
+    review: 'all', memQ: '', memPage: 0, dash: null, trYear: null, trCat: '__spend', trAcct: 'all',
   };
 
   // ======================= storage =======================
@@ -5430,6 +5627,16 @@ start();
       if (this.mode === 'idb') { const v = await this.get('state'); return v ? JSON.parse(v) : null; }
       if (this.mode === 'local') { const v = localStorage.getItem('tally-state'); return v ? JSON.parse(v) : null; }
       return null;
+    },
+    async getFx() {
+      if (this.mode === 'idb') { const v = await this.get('fx'); return v ? JSON.parse(v) : null; }
+      if (this.mode === 'local') { const v = localStorage.getItem('tally-fx'); return v ? JSON.parse(v) : null; }
+      return null;
+    },
+    async putFx(v) {
+      const json = JSON.stringify(v);
+      if (this.mode === 'idb') return this.put('fx', json);
+      if (this.mode === 'local') localStorage.setItem('tally-fx', json);
     },
     async save(state) {
       const json = JSON.stringify(state);
@@ -5517,6 +5724,87 @@ start();
   const txById = id => S.transactions.find(t => t.id === id);
   const accounts = () => [...new Set(S.transactions.map(t => t.account))].sort((a, b) => a.localeCompare(b));
 
+  // ======================= currencies =======================
+  // Each account has a currency (the main one unless set otherwise in Accounts & data). An amount in another
+  // currency counts at the Bank of Canada USD/CAD rate of its day; the rates are fetched once and kept in this browser.
+  const homeCcy = () => S.settings.currency || 'CAD';
+  const accCcy = name => (S.settings.accountCcy && S.settings.accountCcy[name]) || homeCcy();
+  const foreign = t => accCcy(t.account) !== homeCcy();
+  let FX = { s: {}, from: null, to: null, at: 0 }, fxKeys = [];
+  const fxIndex = () => { fxKeys = Object.keys(FX.s).sort(); };
+  function usdcadOn(date) {
+    // the closest Bank of Canada rate on or before the day (weekends, holidays), else just after
+    let lo = 0, hi = fxKeys.length - 1, at = -1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (fxKeys[mid] <= date) { at = mid; lo = mid + 1; } else hi = mid - 1; }
+    const near = i => (i >= 0 && i < fxKeys.length ? fxKeys[i] : null);
+    const days = d => Math.abs((Date.parse(d) - Date.parse(date)) / 864e5);
+    const b = near(at), n = near(at + 1);
+    if (b && days(b) <= 10) return FX.s[b];
+    if (n && days(n) <= 10) return FX.s[n];
+    // other sources: the Investments mode's rates, then the month-end rate in Everything
+    try { const v = window.ExposureApp && window.ExposureApp.ready && window.ExposureApp.fxOn(date); if (v) return v; } catch (e) { /* not loaded */ }
+    try { const f = window.HomeApp && window.HomeApp.state && window.HomeApp.state.fx[date.slice(0, 7)]; if (f && +f.USD > 0) return +f.USD; } catch (e) { /* not loaded */ }
+    if (b && days(b) <= 45) return FX.s[b];
+    return null;
+  }
+  // units of the main currency per unit of ccy on a date (only CAD and USD can be converted)
+  function rateOn(ccy, date) {
+    const home = homeCcy();
+    if (ccy === home) return 1;
+    const u = usdcadOn(date);
+    if (!u) return null;
+    const toCad = c => (c === 'CAD' ? 1 : c === 'USD' ? u : null);
+    const a = toCad(ccy), b = toCad(home);
+    return a === null || b === null ? null : a / b;
+  }
+  // a transaction's amount in the main currency (null when there's no rate for it yet)
+  function amtOf(t, v = t.amount) {
+    const c = accCcy(t.account);
+    if (c === homeCcy()) return v;
+    const r = rateOn(c, t.date);
+    return r === null ? null : Math.round(v * r * 100) / 100;
+  }
+  const amt = t => amtOf(t) || 0;
+  // the pieces a transaction counts as: its split parts, or itself
+  const parts = t => (t.splits && t.splits.length ? t.splits.map(p => ({ cat: p.cat || null, amount: amtOf(t, p.amount) || 0 })) : [{ cat: t.cat, amount: amt(t) }]);
+  const inCat = (t, id) => (t.splits && t.splits.length ? t.splits.some(p => p.cat === id) : t.cat === id);
+  const noRate = () => S.transactions.filter(t => foreign(t) && amtOf(t) === null);
+  const fmIn = (v, ccy) => { try { return new Intl.NumberFormat('en-CA', { style: 'currency', currency: ccy }).format(v); } catch (e) { return `${ccy} ${v.toFixed(2)}`; } };
+  const fmSignedIn = (v, ccy) => (v > 0 ? '+' : '') + fmIn(Math.round(v * 100) / 100, ccy);
+  const ccyChoices = () => [...new Set([homeCcy(), 'CAD', 'USD'])];
+  function setAccCcy(name, c) {
+    S.settings.accountCcy = Object.assign({}, S.settings.accountCcy);
+    if (!c || c === homeCcy()) delete S.settings.accountCcy[name]; else S.settings.accountCcy[name] = c;
+  }
+  function fxNote() {
+    const n = S.transactions.filter(foreign).length;
+    if (!n) return '';
+    const miss = noRate().length;
+    return `<p class="small muted" style="margin:10px 14px 12px">${plural(n, 'transaction')} in other currencies count at the Bank of Canada rate of their day${FX.at ? ` (rates updated ${relTime(FX.at)})` : ''}.${miss ? ` <b>${plural(miss, 'has', 'have')} no rate yet</b> and ${miss === 1 ? 'is' : 'are'} left out of the totals until the rates load (that needs an internet connection).` : ''}</p>`;
+  }
+  async function loadFx({ force = false } = {}) {
+    if (!FX.at) { try { const v = await Store.getFx(); if (v && v.s) { FX = v; fxIndex(); } } catch (e) { /* none yet */ } }
+    const need = S.transactions.filter(foreign);
+    if (!need.length) return;
+    const start = need.reduce((m, t) => (t.date < m ? t.date : m), need[0].date);
+    const d = new Date(), today = C.iso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const stale = !FX.to || FX.to < today && Date.now() - FX.at > 6 * 3600e3;
+    if (!force && FX.from && FX.from <= start && !stale) return;
+    const from = FX.from && FX.from <= start ? FX.to : start;
+    try {
+      const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 20000);
+      const r = await fetch(`https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?start_date=${from}&end_date=${today}`, { signal: ctl.signal });
+      clearTimeout(tm);
+      const j = await r.json();
+      for (const o of (j.observations || [])) { const v = o.FXUSDCAD && +o.FXUSDCAD.v; if (o.d && v > 0) FX.s[o.d] = v; }
+      FX.from = FX.from && FX.from < start ? FX.from : start; FX.to = today; FX.at = Date.now();
+      fxIndex();
+      try { await Store.putFx(FX); } catch (e) { /* storage blocked */ }
+      render();
+      if (window.HomeApp && window.Shell && window.Shell.mode === 'all') window.HomeApp.render();
+    } catch (e) { /* offline: amounts without a rate are left out and flagged */ }
+  }
+
   // ======================= periods =======================
   function monthStart(y, m) { const d = new Date(y, m - 1, 1); return C.iso(d.getFullYear(), d.getMonth() + 1, 1); }
   function monthEnd(y, m) { const d = new Date(y, m, 0); return C.iso(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
@@ -5572,13 +5860,13 @@ start();
   const groupColor = id => (PSEUDO[id] ? cssVar('--rule-strong') : (cat(id) || {}).color || '#888');
   function aggregate(list) {
     const r = { income: 0, spend: 0, byCat: new Map(), months: new Map(), catMonth: new Map(), merchants: new Map(), uncatN: 0, transferN: 0 };
-    for (const t of list) {
-      const ty = t.cat ? catType(t.cat) : null;
+    for (const t of list) for (const pt of parts(t)) {
+      const ty = pt.cat ? catType(pt.cat) : null;
       if (ty === 'transfer') { r.transferN++; continue; }
-      const kind = ty || (t.amount > 0 ? 'income' : 'expense');
-      const id = t.cat && ty ? t.cat : (kind === 'income' ? '__in' : '__out');
-      if (!t.cat) r.uncatN++;
-      const v = kind === 'income' ? t.amount : -t.amount;
+      const kind = ty || (pt.amount > 0 ? 'income' : 'expense');
+      const id = pt.cat && ty ? pt.cat : (kind === 'income' ? '__in' : '__out');
+      if (!pt.cat) r.uncatN++;
+      const v = kind === 'income' ? pt.amount : -pt.amount;
       if (kind === 'income') r.income += v; else r.spend += v;
       const ym = t.date.slice(0, 7);
       const mo = r.months.get(ym) || { inc: 0, sp: 0 };
@@ -5610,6 +5898,7 @@ start();
       const t = txById(id);
       if (!t) continue;
       if (log) logReview(t, catId);
+      delete t.splits;
       t.cat = catId || null; t.src = 'manual'; t.conf = 1;
       touched.push(t);
     }
@@ -5633,6 +5922,7 @@ start();
     dashboard: ['Dashboard', viewDashboard, afterDashboard],
     review: ['Review', viewReview],
     transactions: ['Transactions', viewTransactions, afterTransactions],
+    trends: ['Trends', viewTrends, afterTrends],
     categories: ['Categories', viewCategories],
     learning: ['Rules & learning', viewLearning, afterLearning],
     data: ['Accounts & data', viewData],
@@ -5678,7 +5968,7 @@ start();
       if (!needsReview(t)) continue;
       let x = g.get(t.key);
       if (!x) { x = { key: t.key, txns: [], sum: 0, cats: new Map() }; g.set(t.key, x); }
-      x.txns.push(t); x.sum += t.amount;
+      x.txns.push(t); x.sum += amt(t);
       x.cats.set(t.cat || '', (x.cats.get(t.cat || '') || 0) + 1);
     }
     for (const x of g.values()) {
@@ -5759,6 +6049,9 @@ start();
     }
     if (A.transferN) notes.push(`${plural(A.transferN, 'transfer')} between your own accounts ${A.transferN === 1 ? "isn't" : "aren't"} counted.`);
     if (A.uncatN) notes.push(`${plural(A.uncatN, 'transaction')} without a category ${A.uncatN === 1 ? 'is' : 'are'} counted as spending or income by direction.`);
+    const nr = noRate().filter(inScope).length;
+    if (nr) notes.push(`${plural(nr, 'transaction')} in another currency ${nr === 1 ? 'has' : 'have'} no exchange rate yet, so ${nr === 1 ? 'it is' : 'they are'} left out until the Bank of Canada rates load (that needs an internet connection).`);
+    if (S.transactions.some(foreign)) notes.push(`Amounts in other currencies are converted to ${homeCcy()} at the Bank of Canada rate of their day.`);
     const exp = [...A.byCat.values()].filter(c => c.kind === 'expense').sort((a, b) => b.sum - a.sum);
     const inc = [...A.byCat.values()].filter(c => c.kind === 'income').sort((a, b) => b.sum - a.sum);
     const maxExp = Math.max(1, ...exp.map(c => c.sum));
@@ -5881,6 +6174,118 @@ start();
     });
   }
 
+  // ======================= trends: year by year, and this year against last =======================
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function trendsModel() {
+    const acc = ui.trAcct === 'all' || accounts().includes(ui.trAcct) ? ui.trAcct : 'all';
+    ui.trAcct = acc;
+    const A = aggregate(S.transactions.filter(t => acc === 'all' || t.account === acc));
+    const months = [...A.months.keys()].sort();
+    const years = [...new Set(months.map(m => +m.slice(0, 4)))].sort((a, b) => a - b);
+    if (!years.includes(ui.trYear)) ui.trYear = years[years.length - 1] || null;
+    const Y = ui.trYear, P = Y - 1;
+    // compare the same months: January to the last month with data in the chosen year
+    const lastM = Math.max(0, ...months.filter(m => +m.slice(0, 4) === Y).map(m => +m.slice(5, 7)));
+    const inRange = (y, upto) => m => +m.slice(0, 4) === y && +m.slice(5, 7) <= upto;
+    const sumCat = (id, pick) => { const cm = A.catMonth.get(id); let t = 0; if (cm) cm.forEach((v, m) => { if (pick(m)) t += v; }); return t; };
+    const sumTot = (k, pick) => { let t = 0; A.months.forEach((v, m) => { if (pick(m)) t += k === 'net' ? v.inc - v.sp : v[k]; }); return t; };
+    const cur = inRange(Y, lastM), prev = inRange(P, lastM), prevFull = inRange(P, 12);
+    const rows = [...A.byCat.values()].map(c => ({ id: c.id, kind: c.kind, name: groupName(c.id), cur: sumCat(c.id, cur), prev: sumCat(c.id, prev), full: sumCat(c.id, prevFull) }))
+      .filter(r => Math.abs(r.cur) > 0.5 || Math.abs(r.prev) > 0.5 || Math.abs(r.full) > 0.5);
+    const yearRows = years.map(y => {
+      const pick = m => +m.slice(0, 4) === y, ms = months.filter(pick);
+      const inc = sumTot('inc', pick), sp = sumTot('sp', pick);
+      return { y, n: ms.length, first: ms[0], last: ms[ms.length - 1], inc, sp, net: inc - sp };
+    });
+    const hasPrev = months.some(prev);
+    return { A, months, years, Y, P, lastM, rows, yearRows, hasPrev,
+      tot: k => ({ cur: sumTot(k, cur), prev: sumTot(k, prev), full: sumTot(k, prevFull) }), sumCat, sumTot };
+  }
+  function viewTrends() {
+    if (!S.transactions.length) return viewWelcome();
+    const T = trendsModel();
+    if (!T.Y) return '<div class="empty">No income or spending to compare yet.</div>';
+    const { Y, P, lastM } = T, span = lastM === 12 ? '' : lastM === 1 ? ' (Jan)' : ` (Jan–${MON[lastM - 1]})`;
+    const chg = (a, b, good) => {
+      const d = a - b;
+      if (Math.abs(d) < 0.5) return '<td class="amt muted">–</td><td class="amt muted">–</td>';
+      const cls = (good === 'up' ? d > 0 : d < 0) ? 'in' : 'out';
+      return `<td class="amt ${cls}">${d > 0 ? '+' : '−'}${fm0(Math.abs(d))}</td><td class="amt ${cls}">${Math.abs(b) > 0.5 ? `${d > 0 ? '+' : '−'}${Math.abs(d / b * 100).toFixed(0)}%` : 'new'}</td>`;
+    };
+    const exp = T.rows.filter(r => r.kind === 'expense').sort((a, b) => Math.max(b.cur, b.prev) - Math.max(a.cur, a.prev));
+    const inc = T.rows.filter(r => r.kind === 'income').sort((a, b) => Math.max(b.cur, b.prev) - Math.max(a.cur, a.prev));
+    const partial = lastM < 12;
+    const row = (r, good) => `<tr class="click${ui.trCat === r.id ? ' sel' : ''}" data-trcat="${esc(r.id)}" tabindex="0"><td><span class="dot" style="background:${groupColor(r.id)};margin-right:8px"></span>${esc(r.name)}</td><td class="amt">${Math.abs(r.prev) > 0.5 ? fm0(r.prev) : '<span class="muted">–</span>'}</td><td class="amt">${Math.abs(r.cur) > 0.5 ? fm0(r.cur) : '<span class="muted">–</span>'}</td>${chg(r.cur, r.prev, good)}${partial ? `<td class="amt muted">${Math.abs(r.full) > 0.5 ? fm0(r.full) : '–'}</td>` : ''}</tr>`;
+    const totRow = (label, k, good, id) => { const t = T.tot(k); return `<tr class="total click${ui.trCat === id ? ' sel' : ''}" data-trcat="${id}" tabindex="0"><td>${label}</td><td class="amt">${fm0(t.prev)}</td><td class="amt">${fm0(t.cur)}</td>${chg(t.cur, t.prev, good)}${partial ? `<td class="amt muted">${fm0(t.full)}</td>` : ''}</tr>`; };
+    // the headline: spending against the same months last year, and the categories that moved most
+    let head = '';
+    if (T.hasPrev) {
+      const sp = T.tot('sp'), d = sp.cur - sp.prev;
+      const moves = exp.map(r => ({ r, d: r.cur - r.prev })).filter(x => Math.abs(x.d) >= 1);
+      const up = moves.filter(x => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 3), down = moves.filter(x => x.d < 0).sort((a, b) => a.d - b.d).slice(0, 3);
+      head = `<p class="tr-head">Spending in ${Y}${span} is <b class="${d > 0 ? 'out' : 'in'}">${d > 0 ? 'up' : 'down'} ${fm0(Math.abs(d))}</b>${Math.abs(sp.prev) > 0.5 ? ` (${d > 0 ? '+' : '−'}${Math.abs(d / sp.prev * 100).toFixed(0)}%)` : ''} on the same months of ${P}.
+        ${up.length ? `<br>Biggest increases: ${up.map(x => `${esc(x.r.name)} <b class="out">+${fm0(x.d)}</b>`).join(', ')}.` : ''}${down.length ? ` Biggest drops: ${down.map(x => `${esc(x.r.name)} <b class="in">−${fm0(-x.d)}</b>`).join(', ')}.` : ''}</p>`;
+    }
+    const opts = [['__spend', 'Total spending'], ['__inc', 'Total income'], ['__net', 'Net (saved)']].concat(exp.map(r => [r.id, r.name]), inc.map(r => [r.id, r.name]));
+    if (!opts.some(o => o[0] === ui.trCat)) ui.trCat = '__spend';
+    const accs = accounts();
+    return `
+      <div class="toolbar tr-tools">
+        <label class="inline small">Year <select data-tr="year" aria-label="Year">${T.years.slice().reverse().map(y => `<option${y === Y ? ' selected' : ''}>${y}</option>`).join('')}</select></label>
+        ${accs.length > 1 ? `<label class="inline small">Account <select data-tr="acct" aria-label="Account"><option value="all">All accounts</option>${accs.map(a => `<option${a === ui.trAcct ? ' selected' : ''}>${esc(a)}</option>`).join('')}</select></label>` : ''}
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>Month by month: ${Y} and ${P}</h2><span class="spacer"></span><select data-tr="cat" aria-label="What to chart">${opts.map(([v, l]) => `<option value="${esc(v)}"${v === ui.trCat ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+        <div class="panel pad"><div class="chart-box tr-chart"><canvas id="trChart" role="img" aria-label="Month by month, ${Y} against ${P}"></canvas></div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>${Y} against ${P}</h2><span class="muted small">${partial ? `Same months: January to ${MON[lastM - 1]}` : 'Full years'}. Click a row to chart it.</span></div>
+        ${head}
+        <div class="panel"><table class="tbl trtbl"><thead><tr><th>Category</th><th class="amt">${P}${span}</th><th class="amt">${Y}${span}</th><th class="amt">Change</th><th class="amt">%</th>${partial ? `<th class="amt">${P} full year</th>` : ''}</tr></thead><tbody>
+          ${exp.map(r => row(r, 'down')).join('')}${totRow('Total spending', 'sp', 'down', '__spend')}
+          ${inc.map(r => row(r, 'up')).join('')}${totRow('Total income', 'inc', 'up', '__inc')}
+          ${totRow('Net (saved)', 'net', 'up', '__net')}
+        </tbody></table></div>
+        ${T.hasPrev ? '' : `<p class="typecap">No transactions in ${P} yet${ui.trAcct !== 'all' ? ' for this account' : ''}, so there's nothing to compare against. Import older statements to see the change.</p>`}
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>Year by year</h2></div>
+        <div class="panel"><table class="tbl"><thead><tr><th>Year</th><th class="amt">Income</th><th class="amt">Spending</th><th class="amt">Saved</th><th class="amt">Savings rate</th><th class="amt">Spending a month</th></tr></thead><tbody>
+          ${T.yearRows.slice().reverse().map(r => `<tr><td>${r.y}${r.n < 12 ? ` <span class="muted small">${r.n === 1 ? MON[+r.first.slice(5, 7) - 1] : `${MON[+r.first.slice(5, 7) - 1]}–${MON[+r.last.slice(5, 7) - 1]}`}</span>` : ''}</td><td class="amt">${fm0(r.inc)}</td><td class="amt">${fm0(r.sp)}</td><td class="amt ${r.net < 0 ? 'out' : ''}">${r.net > 0.5 ? '+' : ''}${fm0(r.net)}</td><td class="amt">${r.inc > 0 ? pct(r.net / r.inc) : '–'}</td><td class="amt">${fm0(r.sp / Math.max(1, r.n))}</td></tr>`).join('')}
+        </tbody></table></div>
+        <p class="typecap">Transfers between your own accounts aren't counted. Spending a month divides by the months that have transactions.</p>
+      </div>`;
+  }
+  function afterTrends() {
+    const el = $('#trChart');
+    if (!el || typeof Chart === 'undefined') return;
+    const T = trendsModel(), { Y, P } = T, k = ui.trCat;
+    const val = (y, mi) => {
+      const pick = m => m === `${y}-${C.pad2(mi + 1)}`;
+      if (k === '__spend') return T.sumTot('sp', pick);
+      if (k === '__inc') return T.sumTot('inc', pick);
+      if (k === '__net') return T.sumTot('net', pick);
+      return T.sumCat(k, pick);
+    };
+    const has = (y, mi) => T.A.months.has(`${y}-${C.pad2(mi + 1)}`);
+    const cur = MON.map((_, i) => (has(Y, i) ? Math.round(val(Y, i)) : null)), prev = MON.map((_, i) => (has(P, i) ? Math.round(val(P, i)) : null));
+    const ink3 = cssVar('--ink-3'), rule = cssVar('--rule');
+    const color = k.startsWith('__') ? (k === '__inc' ? cssVar('--in') : k === '__net' ? cssVar('--ink') : cssVar('--out')) : groupColor(k);
+    Chart.defaults.font.family = '"Plex", "IBM Plex Sans", system-ui, sans-serif'; Chart.defaults.color = ink3; Chart.defaults.borderColor = rule;
+    ui.charts.tr = new Chart(el, {
+      type: 'bar',
+      data: { labels: MON, datasets: [
+        { label: String(P), data: prev, backgroundColor: color + '55', borderRadius: 3, maxBarThickness: 26 },
+        { label: String(Y), data: cur, backgroundColor: color, borderRadius: 3, maxBarThickness: 26 },
+      ] },
+      options: {
+        maintainAspectRatio: false, responsive: true, animation: { duration: 300 }, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, boxHeight: 12 } }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y === null ? 'no data' : fm0(c.parsed.y)}` } } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: rule }, border: { display: false }, ticks: { callback: v => fmC(v) } } },
+      },
+    });
+  }
+
   // ======================= review =======================
   function accuracyStats() {
     const g = S.reviewLog.filter(r => r.g);
@@ -5948,13 +6353,15 @@ start();
     if (f.merchant) list = list.filter(t => t.key === f.merchant);
     if (f.q) {
       const q = f.q.toUpperCase().trim();
-      list = list.filter(t => t.desc.toUpperCase().includes(q) || t.account.toUpperCase().includes(q) || catName(t.cat).toUpperCase().includes(q) || Math.abs(t.amount).toFixed(2).includes(q) || (t.note || '').toUpperCase().includes(q) || (t.manual && 'MANUAL ENTRY'.includes(q)));
+      list = list.filter(t => t.desc.toUpperCase().includes(q) || t.account.toUpperCase().includes(q) || (t.splits && t.splits.length ? t.splits.map(x => catName(x.cat)).join(' ') : catName(t.cat)).toUpperCase().includes(q) || Math.abs(t.amount).toFixed(2).includes(q) || (t.note || '').toUpperCase().includes(q) || (t.manual && 'MANUAL ENTRY'.includes(q)));
     }
     if (f.cat === 'review') list = list.filter(needsReview);
-    else if (f.cat === 'uncat') list = list.filter(t => !t.cat);
+    else if (f.cat === 'uncat') list = list.filter(t => !t.cat && !(t.splits && t.splits.length));
     else if (f.cat === 'manual') list = list.filter(t => t.manual);
     else if (f.cat === 'notes') list = list.filter(t => t.note);
-    else if (f.cat !== 'all') list = list.filter(t => t.cat === f.cat);
+    else if (f.cat === 'split') list = list.filter(t => t.splits && t.splits.length);
+    else if (f.cat === 'edited') list = list.filter(t => t.orig);
+    else if (f.cat !== 'all') list = list.filter(t => inCat(t, f.cat));
     if (f.flow === 'in') list = list.filter(t => t.amount > 0);
     else if (f.flow === 'out') list = list.filter(t => t.amount < 0);
     const d = f.dir;
@@ -5962,7 +6369,7 @@ start();
       date: (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.desc.localeCompare(b.desc)) * d,
       desc: (a, b) => a.desc.localeCompare(b.desc) * d,
       cat: (a, b) => catName(a.cat).localeCompare(catName(b.cat)) * d,
-      amount: (a, b) => (a.amount - b.amount) * d,
+      amount: (a, b) => (amt(a) - amt(b)) * d,
     }[f.sort] || (() => 0);
     return list.sort(by);
   }
@@ -5978,6 +6385,8 @@ start();
           <option value="uncat"${f.cat === 'uncat' ? ' selected' : ''}>Uncategorized</option>
           <option value="manual"${f.cat === 'manual' ? ' selected' : ''}>Manual entries</option>
           <option value="notes"${f.cat === 'notes' ? ' selected' : ''}>With a note</option>
+          <option value="split"${f.cat === 'split' ? ' selected' : ''}>Split across categories</option>
+          <option value="edited"${f.cat === 'edited' ? ' selected' : ''}>Edited</option>
           ${catOptions(f.cat, { includeNone: false })}
         </select>
         <select data-tx="flow" aria-label="Direction">
@@ -6000,20 +6409,23 @@ start();
     ui.tx.page = Math.min(ui.tx.page, pages - 1);
     const rows = list.slice(ui.tx.page * PAGE, ui.tx.page * PAGE + PAGE);
     let tin = 0, tout = 0;
-    list.forEach(t => { if (t.amount > 0) tin += t.amount; else tout -= t.amount; });
+    list.forEach(t => { const v = amt(t); if (v > 0) tin += v; else tout -= v; });
     $('#txCount').textContent = `${plural(list.length, 'transaction')}: ${fm0(tin)} in, ${fm0(tout)} out`;
     const arrow = k => (ui.tx.sort === k ? `<span class="arrow">${ui.tx.dir > 0 ? '▲' : '▼'}</span>` : '');
     const allSel = rows.length && rows.every(t => ui.sel.has(t.id));
     const tr = t => {
+      const split = !!(t.splits && t.splits.length), fx = foreign(t), cv = fx ? amtOf(t) : null;
       const nr = needsReview(t);
       const cls = !t.cat ? 'none' : nr ? 'guess' : '';
       const why = t.src !== 'manual' && t.src !== 'none' ? `${SRC_TEXT[t.src]}${t.src === 'learned' || t.src === 'similar' ? ` (${Math.round(t.conf * 100)}% sure)` : ''}` : (t.src === 'manual' ? 'Confirmed by you' : 'No guess yet');
       return `<tr data-id="${t.id}" class="${ui.sel.has(t.id) ? 'sel' : ''}">
         <td class="check"><input type="checkbox" data-sel aria-label="Select" ${ui.sel.has(t.id) ? 'checked' : ''}></td>
         <td class="date">${fdate(t.date)}</td>
-        <td class="desc"><span class="desc-main" title="${esc(t.desc)}">${t.manual ? '<span class="tx-tag" title="Added by hand, not from an imported statement">Manual entry</span>' : ''}${esc(t.desc)}</span><span class="desc-sub">${esc(t.account)}<span class="tx-date"> · ${fdate(t.date)}</span></span>${t.note ? `<span class="tx-note" title="${esc(t.note)}">${ICON.note}<span>${esc(t.note)}</span></span>` : ''}</td>
-        <td class="cat"><div class="catcell"><select class="catsel ${cls}" data-cat aria-label="Category" title="${esc(why)}">${catOptions(t.cat)}</select>${nr && t.cat ? `<button class="iconbtn ok" data-confirm title="Confirm this category" aria-label="Confirm">${ICON.check}</button>` : ''}<button class="iconbtn notebtn${t.note ? ' on' : ''}" data-notetx title="${t.note ? 'Edit the note' : 'Add a note'}" aria-label="${t.note ? 'Edit the note on' : 'Add a note to'} ${esc(t.desc)}">${ICON.note}</button>${t.manual ? `<button class="iconbtn" data-edittx title="Edit this manual entry" aria-label="Edit ${esc(t.desc)}">✎</button>` : ''}</div></td>
-        <td class="amt ${t.amount > 0 ? 'in' : ''}">${fmSigned(t.amount)}</td>
+        <td class="desc"><span class="desc-main" title="${esc(t.desc)}">${t.manual ? '<span class="tx-tag" title="Added by hand, not from an imported statement">Manual entry</span>' : ''}${t.orig ? `<span class="tx-tag edited" title="${esc(`Changed by you. On the statement: ${fdate(t.orig.date)} · ${t.orig.desc} · ${fmSignedIn(t.orig.amount, accCcy(t.orig.account || t.account))}${t.orig.account && t.orig.account !== t.account ? ` · ${t.orig.account}` : ''}`)}">Edited</span>` : ''}${esc(t.desc)}</span><span class="desc-sub">${esc(t.account)}<span class="tx-date"> · ${fdate(t.date)}</span></span>${t.note ? `<span class="tx-note" title="${esc(t.note)}">${ICON.note}<span>${esc(t.note)}</span></span>` : ''}</td>
+        <td class="cat"><div class="catcell">${split
+          ? `<button class="splitchip" data-edittx title="${esc(t.splits.map(x => `${catName(x.cat)} ${fmIn(Math.abs(x.amount), accCcy(t.account))}`).join(' · '))}" aria-label="Split across ${t.splits.length} categories: edit">${ICON.split}<span>${esc(t.splits.map(x => catName(x.cat)).join(', '))}</span></button>`
+          : `<select class="catsel ${cls}" data-cat aria-label="Category" title="${esc(why)}">${catOptions(t.cat)}</select>${nr && t.cat ? `<button class="iconbtn ok" data-confirm title="Confirm this category" aria-label="Confirm">${ICON.check}</button>` : ''}`}<button class="iconbtn notebtn${t.note ? ' on' : ''}" data-notetx title="${t.note ? 'Edit the note' : 'Add a note'}" aria-label="${t.note ? 'Edit the note on' : 'Add a note to'} ${esc(t.desc)}">${ICON.note}</button><button class="iconbtn" data-edittx title="Edit or split" aria-label="Edit or split ${esc(t.desc)}">${ICON.edit}</button></div></td>
+        <td class="amt ${t.amount > 0 ? 'in' : ''}">${fx ? `${fmSignedIn(t.amount, accCcy(t.account))}<span class="amt-sub">${cv === null ? 'no rate yet' : '≈ ' + fmSigned(cv)}</span>` : fmSigned(t.amount)}</td>
       </tr>`;
     };
     box.innerHTML = list.length ? `
@@ -6073,11 +6485,11 @@ start();
   // ======================= categories =======================
   function viewCategories() {
     const stats = new Map();
-    S.transactions.forEach(t => {
-      if (!t.cat) return;
-      const s = stats.get(t.cat) || { n: 0, sum: 0 };
-      s.n++; s.sum += t.amount; stats.set(t.cat, s);
-    });
+    S.transactions.forEach(t => parts(t).forEach(pt => {
+      if (!pt.cat) return;
+      const s = stats.get(pt.cat) || { n: 0, sum: 0 };
+      s.n++; s.sum += pt.amount; stats.set(pt.cat, s);
+    }));
     const section = (type, title, help) => {
       const list = S.categories.filter(c => c.type === type).sort((a, b) => a.name.localeCompare(b.name));
       return `<div class="section">
@@ -6131,12 +6543,12 @@ start();
   function catSnapshot() {
     return {
       categories: JSON.parse(JSON.stringify(S.categories)), rules: JSON.parse(JSON.stringify(S.rules)), memory: JSON.parse(JSON.stringify(S.memory)),
-      tx: new Map(S.transactions.map(t => [t.id, [t.cat, t.src, t.conf]])), txCat: ui.tx.cat,
+      tx: new Map(S.transactions.map(t => [t.id, [t.cat, t.src, t.conf, t.splits ? JSON.parse(JSON.stringify(t.splits)) : null]])), txCat: ui.tx.cat,
     };
   }
   function catRestore(s) {
     S.categories = s.categories; S.rules = s.rules; S.memory = s.memory;
-    S.transactions.forEach(t => { const v = s.tx.get(t.id); if (v) [t.cat, t.src, t.conf] = v; });
+    S.transactions.forEach(t => { const v = s.tx.get(t.id); if (v) { [t.cat, t.src, t.conf] = v; if (v[3]) t.splits = v[3]; else delete t.splits; } });
     ui.tx.cat = s.txCat;
     reindex(); scheduleSave(); render(); renderBadge();
   }
@@ -6144,6 +6556,13 @@ start();
   function moveCategory(id, to) {
     let n = 0;
     S.transactions.forEach(t => {
+      if (t.splits && t.splits.length) {
+        if (!t.splits.some(x => x.cat === id)) return;
+        n++;
+        t.splits.forEach(x => { if (x.cat === id) x.cat = to; });
+        if (t.cat === id) t.cat = to;
+        return;
+      }
       if (t.cat !== id) return;
       n++;
       if (to) t.cat = to; else { t.cat = null; t.src = 'none'; }
@@ -6170,7 +6589,7 @@ start();
   async function deleteCategory(id) {
     const c = cat(id);
     if (!c) return;
-    const n = S.transactions.filter(t => t.cat === id).length;
+    const n = S.transactions.filter(t => inCat(t, id)).length;
     const target = await modal({
       title: `Delete ${c.name}?`,
       body: `<p>${n ? `${plural(n, 'transaction')} ${n === 1 ? 'is' : 'are'} filed here. Choose where they go. Merchants the app learned for this category move with them.` : 'No transactions are filed here.'}</p>
@@ -6188,6 +6607,14 @@ start();
     toast(`Deleted ${c.name}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`${c.name} is back.`); } } });
   }
 
+  // put deleted transactions (and the import records they came with) back
+  function restoreTx(removed, imports, msg) {
+    const have = new Set(S.transactions.map(t => t.id));
+    S.transactions = S.transactions.concat(removed.filter(t => !have.has(t.id)));
+    const hi = new Set(S.imports.map(i => i.id));
+    S.imports = S.imports.concat(imports.filter(i => i && !hi.has(i.id)));
+    scheduleSave(); render(); renderBadge(); toast(msg);
+  }
   // ---------- merging two versions of the same category ----------
   const catKey = name => name.toLowerCase().replace(/&|\band\b/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').trim().split(/\s+/)
     .map(w => (w.length > 3 ? w.replace(/ies$/, 'y').replace(/s$/, '') : w)).join('');
@@ -6230,7 +6657,7 @@ start();
   function mergeDialog(fromId, toId) {
     const d = $('#genDialog');
     const counts = new Map();
-    S.transactions.forEach(t => { if (t.cat) counts.set(t.cat, (counts.get(t.cat) || 0) + 1); });
+    S.transactions.forEach(t => { (t.splits && t.splits.length ? [...new Set(t.splits.map(x => x.cat))] : [t.cat]).forEach(c => { if (c) counts.set(c, (counts.get(c) || 0) + 1); }); });
     const opts = sel => `<option value="">Choose a category</option>` + ['expense', 'income', 'transfer'].map(type => {
       const list = S.categories.filter(c => c.type === type).sort((a, b) => a.name.localeCompare(b.name));
       return list.length ? `<optgroup label="${TYPE_LABEL[type]}">${list.map(c => `<option value="${c.id}"${c.id === sel ? ' selected' : ''}>${esc(c.name)} (${(counts.get(c.id) || 0).toLocaleString()})</option>`).join('')}</optgroup>` : '';
@@ -6387,7 +6814,7 @@ start();
     const kind = { all: '', imported: ' imported from files', manual: ' added by hand' }[r.d.kind];
     if (!r.list.length) return { span, where, html: `No transactions${kind} in ${esc(where)} from ${esc(span)}.` };
     let inn = 0, out = 0, man = 0, notes = 0;
-    r.list.forEach(t => { if (t.amount > 0) inn += t.amount; else out -= t.amount; if (t.manual) man++; if (t.note) notes++; });
+    r.list.forEach(t => { const v = amt(t); if (v > 0) inn += v; else out -= v; if (t.manual) man++; if (t.note) notes++; });
     const extra = [r.d.kind === 'all' && man ? `${plural(man, 'manual entry', 'manual entries')} (these can't be imported again)` : '', notes ? `${plural(notes, 'note')}` : ''].filter(Boolean);
     return {
       span, where, inn, out, man,
@@ -6486,10 +6913,10 @@ start();
       </div>
 
       <div class="section">
-        <div class="section-head"><h2>Accounts</h2><span class="muted small">Rename an account to match another and the two merge.</span></div>
-        <div class="panel">${accStats.size ? `<table class="tbl"><thead><tr><th>Name</th><th class="amt">Transactions</th><th>Dates</th><th style="width:44px"></th></tr></thead><tbody>
-          ${[...accStats.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, a]) => `<tr data-acc="${esc(name)}"><td><input type="text" value="${esc(name)}" data-acc-name aria-label="Account name" style="width:100%;min-width:180px;max-width:320px"></td><td class="amt">${a.n.toLocaleString()}</td><td class="muted">${fdate(a.from)} to ${fdate(a.to)}</td><td><button class="iconbtn del" data-acc-del title="Delete this account and its transactions" aria-label="Delete account">${ICON.trash}</button></td></tr>`).join('')}
-        </tbody></table>` : '<div class="empty">No accounts yet. They appear when you import files.</div>'}</div>
+        <div class="section-head"><h2>Accounts</h2><span class="muted small">Rename an account to match another and the two merge. Set the currency of a US-dollar account and its amounts count in ${esc(homeCcy())}.</span></div>
+        <div class="panel">${accStats.size ? `<table class="tbl"><thead><tr><th>Name</th><th>Currency</th><th class="amt">Transactions</th><th>Dates</th><th style="width:44px"></th></tr></thead><tbody>
+          ${[...accStats.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, a]) => `<tr data-acc="${esc(name)}"><td><input type="text" value="${esc(name)}" data-acc-name aria-label="Account name" style="width:100%;min-width:180px;max-width:320px"></td><td><select data-acc-ccy aria-label="Currency of ${esc(name)}">${ccyChoices().map(c => `<option value="${c}"${c === accCcy(name) ? ' selected' : ''}>${c === homeCcy() ? `${c} (main)` : c}</option>`).join('')}</select></td><td class="amt">${a.n.toLocaleString()}</td><td class="muted">${fdate(a.from)} to ${fdate(a.to)}</td><td><button class="iconbtn del" data-acc-del title="Delete this account and its transactions" aria-label="Delete account">${ICON.trash}</button></td></tr>`).join('')}
+        </tbody></table>${fxNote()}` : '<div class="empty">No accounts yet. They appear when you import files.</div>'}</div>
       </div>
 
       ${delRangeSection()}
@@ -6632,6 +7059,7 @@ start();
         else if (k === 'flip') M.mp.flip = el.checked;
         else if (k === 'dateOrder') M.mp.dateOrder = el.value;
         else if (k === 'account') return;
+        else if (k === 'ccy') { M.ccy = el.value; M.ccyTouched = true; return; }
         else if (k === 'descAlt') M.mp.descAlt = +el.value >= 0 ? [+el.value] : [];
         else if (k === 'accIncl' || k === 'accFlip') {
           const key = k === 'accIncl' ? 'exclude' : 'flipAccts';
@@ -6714,6 +7142,7 @@ start();
         ${notes.join('')}
         <div class="map-grid">
           <label class="field wide"><span>${mp.acctCol >= 0 ? 'Bank name (each account below adds its own type)' : 'Account'}</span><input type="text" data-m="account" list="accList" value="${esc(M.account)}" placeholder="${mp.acctCol >= 0 ? 'For example Wealthsimple or RBC' : 'For example TD Chequing or Amex Cobalt'}" autocomplete="off"><datalist id="accList">${accList.map(a => `<option value="${esc(a)}">`).join('')}</datalist>${(M.usedAccounts || []).length ? `<span class="chips">${M.usedAccounts.map(a => `<button type="button" class="chip${a === M.account.trim() ? ' on' : ''}" data-m-pick="${esc(a)}">${esc(a)}</button>`).join('')}</span>` : ''}</label>
+          ${mp.acctCol < 0 && ccyChoices().length > 1 ? `<label class="field"><span>Currency</span><select data-m="ccy">${ccyChoices().map(c => `<option value="${c}"${c === mapperCcy(M) ? ' selected' : ''}>${c === homeCcy() ? `${c} (main)` : c}</option>`).join('')}</select></label>` : ''}
           ${M.parsed.sheets.length > 1 ? `<label class="field"><span>Sheet</span><select data-m="sheet">${M.parsed.sheets.map((s, i) => `<option value="${i}"${i === M.sheet ? ' selected' : ''}>${esc(s.name)} (${s.rows.length} rows)</option>`).join('')}</select></label>` : ''}
           <label class="field"><span>Column names are in</span><select data-m="header"><option value="-1"${mp.header < 0 ? ' selected' : ''}>No header row</option>${M.rows.slice(0, 15).map((r, i) => `<option value="${i}"${i === mp.header ? ' selected' : ''}>Row ${i + 1}: ${esc(trunc(r.filter(c => c !== '' && c != null).map(cellTxt).slice(0, 4).join(', '), 42))}</option>`).join('')}</select></label>
           <label class="field"><span>Date</span><select data-m="date">${colOpts(mp.date, 'Choose…')}</select></label>
@@ -6789,8 +7218,17 @@ start();
     btn.disabled = !M.account.trim() || !P.fresh.length;
     btn.textContent = P.fresh.length ? `Import ${plural(P.fresh.length, 'transaction')}` : (P.dups.length ? 'Nothing new to import' : 'Import');
   }
+  // the currency an import goes in: what you picked, else the account's, else a guess from its name ("Amex USD")
+  function mapperCcy(M) {
+    if (M.ccyTouched && M.ccy) return M.ccy;
+    const a = (M.account || '').trim();
+    if (a && accounts().includes(a)) return accCcy(a);
+    if (/\bUS ?D\b|\bUS\$|U\.S\./i.test(a + ' ' + ((M.file && M.file.name) || ''))) return 'USD';
+    return homeCcy();
+  }
   function commitImport(M, { remember = true, sample = false } = {}) {
     const acct = M.account.trim();
+    if (M.mp && M.mp.acctCol < 0 && acct && !sample) { const c = mapperCcy(M); if (c !== accCcy(acct)) setAccCcy(acct, c); }
     const res = C.applyMapping(M.rows, M.mp, acct);
     const { fresh, dups } = C.splitDuplicates(S.transactions, res.txns);
     const dates = fresh.map(t => t.date).sort();
@@ -6811,6 +7249,7 @@ start();
       S.formats[M.sig] = { mapping, account: acct, accounts: [acct, ...usedBefore.filter(a => a !== acct)].slice(0, 8), columns: M.names.slice(0, 12), savedAt: Date.now(), file: M.file.name };
     }
     C.recategorize(S, ids);
+    if (fresh.some(foreign)) setTimeout(() => loadFx(), 0);
     return { imp, ids };
   }
   function loadSample() {
@@ -6874,8 +7313,18 @@ start();
     inp.click();
   }
   function exportTx() {
-    const head = ['Date', 'Account', 'Description', 'Merchant', 'Category', 'Category type', 'Amount', 'Confirmed', 'Source', 'Note'];
-    const lines = [...S.transactions].sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.account, t.desc, t.key, t.cat ? catName(t.cat) : '', t.cat ? TYPE_LABEL[catType(t.cat)] : '', t.amount.toFixed(2), t.src === 'manual' ? 'yes' : 'no', t.manual ? 'Manual entry' : 'Imported', t.note || ''].map(csvCell).join(','));
+    // one row per transaction, or per part of a split one; amounts in the account's currency and in the main one
+    const home = homeCcy();
+    const head = ['Date', 'Account', 'Description', 'Merchant', 'Category', 'Category type', 'Amount', 'Currency', `Amount (${home})`, 'Confirmed', 'Source', 'Note', 'Split of'];
+    const lines = [];
+    for (const t of [...S.transactions].sort((a, b) => a.date.localeCompare(b.date))) {
+      const src = t.manual ? 'Manual entry' : t.orig ? 'Imported (edited)' : 'Imported';
+      const rows = t.splits && t.splits.length ? t.splits.map(x => ({ cat: x.cat, v: x.amount })) : [{ cat: t.cat, v: t.amount }];
+      rows.forEach(r => {
+        const conv = amtOf(t, r.v);
+        lines.push([t.date, t.account, t.desc, t.key, r.cat ? catName(r.cat) : '', r.cat ? TYPE_LABEL[catType(r.cat)] : '', r.v.toFixed(2), accCcy(t.account), conv === null ? '' : conv.toFixed(2), t.src === 'manual' ? 'yes' : 'no', src, t.note || '', rows.length > 1 ? t.amount.toFixed(2) : ''].map(csvCell).join(','));
+      });
+    }
     download(`tally-transactions-${stamp()}.csv`, '﻿' + [head.join(','), ...lines].join('\r\n'), 'text/csv');
   }
   function exportPivot() {
@@ -6895,17 +7344,22 @@ start();
   // review and sync), marked manual: true, so they can be edited or deleted here and are never removed with an import.
   function txDialog(t) {
     const d = $('#genDialog');
+    const imported = t && !t.manual;
     const dir0 = t ? (t.amount > 0 ? 'in' : 'out') : (ui.lastDir || 'out');
     const acct0 = t ? t.account : (S.settings.lastManualAccount || 'Cash');
     const accts = [...new Set(['Cash', ...accounts()])];
-    d.innerHTML = `<div class="dlg-head"><h3>${t ? 'Edit transaction' : 'Add a transaction'}</h3></div>
+    // split parts: magnitudes as typed, with a category each
+    let parts = t && t.splits && t.splits.length ? t.splits.map(x => ({ cat: x.cat || '', amt: Math.abs(x.amount).toFixed(2) })) : null;
+    const o = t && t.orig;
+    d.innerHTML = `<div class="dlg-head"><h3>${t ? (imported ? 'Edit transaction' : 'Edit manual entry') : 'Add a transaction'}</h3></div>
       <form class="dlg-body txform" novalidate onsubmit="return false">
+        ${imported ? `<p class="txorig">${o ? `<b>Changed by you.</b> On the statement: ${esc(fdate(o.date))} · ${esc(o.desc)} · ${esc(fmSignedIn(o.amount, accCcy(o.account || t.account)))}${o.account && o.account !== t.account ? ` · ${esc(o.account)}` : ''} <button type="button" class="linkbtn" data-txact="revert">Put back the statement's values</button>` : 'From an imported statement. Changes you make here are kept, and importing the same statement again still recognizes it.'}</p>` : ''}
         <div class="segmented txdir" role="group" aria-label="Money in or out"><button type="button" data-dir="out" aria-pressed="${dir0 === 'out'}">Money out</button><button type="button" data-dir="in" aria-pressed="${dir0 === 'in'}">Money in</button></div>
         <div class="txgrid">
           <label>Date${DateField.html({ id: 'txDate', value: t ? t.date : DateField.todayIso(), label: 'Date' })}</label>
-          <label>Amount<input type="text" id="txAmt" inputmode="decimal" autocomplete="off" placeholder="0.00" value="${t ? esc(Math.abs(t.amount).toFixed(2)) : ''}"></label>
+          <label><span>Amount <span class="muted" id="txCcy" style="font-weight:400"></span></span><input type="text" id="txAmt" inputmode="decimal" autocomplete="off" placeholder="0.00" value="${t ? esc(Math.abs(t.amount).toFixed(2)) : ''}"></label>
           <label class="wide">Description<input type="text" id="txDesc" autocomplete="off" placeholder="e.g. Farmers market" value="${t ? esc(t.desc) : ''}"></label>
-          <label>Category<select id="txCat">${catOptions(t ? t.cat : null, { placeholder: 'Choose later (Review)' })}</select></label>
+          <div class="wide txcatbox" id="txCatBox"></div>
           <label>Account<input type="text" id="txAcct" list="txAccts" autocomplete="off" value="${esc(acct0)}"><datalist id="txAccts">${accts.map(a => `<option value="${esc(a)}">`).join('')}</datalist></label>
           <label class="wide"><span>Note <span class="muted" style="font-weight:400">(optional)</span></span><textarea id="txNoteIn" rows="2" maxlength="500" placeholder="e.g. Reimbursed by work">${t && t.note ? esc(t.note) : ''}</textarea></label>
         </div>
@@ -6915,48 +7369,122 @@ start();
         <button class="btn" data-txact="cancel">Cancel</button>${t ? '' : '<button class="btn" data-txact="again">Add and start another</button>'}<button class="btn primary" data-txact="save">${t ? 'Save' : 'Add'}</button></div>`;
     let dir = dir0;
     const err = m => { $('#txErr', d).textContent = m; };
+    const money = v => fmIn(v, accCcy($('#txAcct', d).value.trim() || 'Cash'));
+    const totalTyped = () => { const pa = C.parseAmount($('#txAmt', d).value); const v = Math.abs(pa && typeof pa === 'object' ? pa.v : pa); return isFinite(v) ? v : 0; };
+    const partVal = x => { const pa = C.parseAmount(x.amt); const v = Math.abs(pa && typeof pa === 'object' ? pa.v : pa); return isFinite(v) ? v : 0; };
+    const left = () => Math.round((totalTyped() - parts.reduce((a, x) => a + partVal(x), 0)) * 100) / 100;
+    const showLeft = () => {
+      const el = $('#spLeft', d); if (!el) return;
+      const l = left();
+      el.textContent = Math.abs(l) < 0.005 ? 'Adds up to the total' : l > 0 ? `${money(l)} left to assign` : `${money(-l)} more than the total`;
+      el.className = 'spleft' + (Math.abs(l) < 0.005 ? ' ok' : ' bad');
+    };
+    const drawCat = () => {
+      const box = $('#txCatBox', d);
+      if (!parts) {
+        box.innerHTML = `<label>Category<select id="txCat">${catOptions(t && !(t.splits && t.splits.length) ? t.cat : null, { placeholder: 'Choose later (Review)' })}</select></label>
+          <button type="button" class="linkbtn spl-toggle" data-sp="on">${ICON.split}Split across categories</button>`;
+        return;
+      }
+      box.innerHTML = `<div class="splitbox"><div class="splithead"><span>Split across categories</span><button type="button" class="linkbtn" data-sp="off">Don't split</button></div>
+        ${parts.map((x, i) => `<div class="splitrow" data-i="${i}"><select data-sp-cat aria-label="Category for part ${i + 1}">${catOptions(x.cat || null, { placeholder: 'Choose a category' })}</select><input type="text" inputmode="decimal" data-sp-amt aria-label="Amount for part ${i + 1}" placeholder="0.00" value="${esc(x.amt)}"><button type="button" class="iconbtn del" data-sp-del aria-label="Remove part ${i + 1}" ${parts.length <= 2 ? 'disabled' : ''}>${ICON.trash}</button></div>`).join('')}
+        <div class="splitfoot"><button type="button" class="linkbtn" data-sp="add">+ Add a part</button><span id="spLeft" class="spleft"></span></div></div>`;
+      showLeft();
+    };
+    const showCcy = () => { const c = accCcy($('#txAcct', d).value.trim() || 'Cash'); $('#txCcy', d).textContent = c !== homeCcy() ? `(${c})` : ''; showLeft(); };
+    drawCat(); showCcy();
     const read = () => {
       const date = DateField.parse($('#txDate', d).value, { today: DateField.todayIso() });
-      const pa = C.parseAmount($('#txAmt', d).value); const amt = Math.abs(pa && typeof pa === 'object' ? pa.v : pa);
-      const desc = $('#txDesc', d).value.trim(), account = $('#txAcct', d).value.trim() || 'Cash', cat = $('#txCat', d).value || null;
+      const amt = totalTyped();
+      const desc = $('#txDesc', d).value.trim(), account = $('#txAcct', d).value.trim() || 'Cash';
       if (!date) { err('Enter the date, like 2026-10-31 or Oct 31.'); $('#txDate', d).focus(); return null; }
-      if (!(amt > 0) || !isFinite(amt)) { err('Enter the amount, like 45.00.'); $('#txAmt', d).focus(); return null; }
+      if (!(amt > 0)) { err('Enter the amount, like 45.00.'); $('#txAmt', d).focus(); return null; }
       if (!desc) { err('Describe it, like "Farmers market".'); $('#txDesc', d).focus(); return null; }
-      return { date, amount: Math.round((dir === 'out' ? -amt : amt) * 100) / 100, desc, account, cat, note: $('#txNoteIn', d).value.trim() };
+      const sign = dir === 'out' ? -1 : 1;
+      let splits = null, cat = null;
+      if (parts) {
+        if (parts.some(x => !x.cat)) { err('Choose a category for each part.'); const i = parts.findIndex(x => !x.cat); $(`.splitrow[data-i="${i}"] select`, d).focus(); return null; }
+        if (parts.some(x => !(partVal(x) > 0))) { err('Give each part an amount, or remove it.'); return null; }
+        if (Math.abs(left()) >= 0.005) { err(`The parts need to add up to ${money(amt)}.`); return null; }
+        splits = parts.map(x => ({ cat: x.cat, amount: Math.round(sign * partVal(x) * 100) / 100 }));
+        cat = splits.reduce((a, x) => (Math.abs(x.amount) > Math.abs(a.amount) ? x : a)).cat;
+      } else cat = $('#txCat', d).value || null;
+      return { date, amount: Math.round(sign * amt * 100) / 100, desc, account, cat, splits, note: $('#txNoteIn', d).value.trim() };
     };
     const save = again => {
       const v = read(); if (!v) return;
       let x = t;
       if (!x) { x = { id: C.uid('t'), importId: null, manual: true, addedAt: Date.now(), cat: null, src: 'none', conf: 0 }; S.transactions.push(x); }
-      const catBefore = t ? t.cat : null;
+      const catBefore = t ? t.cat : null, wasSplit = !!(t && t.splits && t.splits.length);
+      if (imported) {
+        // keep what the statement said the first time it's changed, so a re-import still matches it (and it can be put back)
+        const changed = x.date !== v.date || x.amount !== v.amount || x.desc !== v.desc || x.account !== v.account;
+        if (changed && !x.orig) x.orig = { date: x.date, amount: x.amount, desc: x.desc, account: x.account };
+      }
       Object.assign(x, { date: v.date, amount: v.amount, desc: v.desc, account: v.account, key: C.merchantKey(v.desc) });
+      if (x.orig && x.orig.date === x.date && x.orig.amount === x.amount && x.orig.desc === x.desc && x.orig.account === x.account) delete x.orig;
       if (v.note) x.note = v.note; else delete x.note;
-      if (v.cat && (v.cat !== catBefore || x.src !== 'manual')) assign([x.id], v.cat);
-      else if (!v.cat) { x.cat = null; x.src = 'none'; x.conf = 0; C.recategorize(S); scheduleSave(); }
-      else scheduleSave();
-      S.settings.lastManualAccount = v.account; ui.lastDir = dir;
+      if (v.splits) { x.splits = v.splits; x.cat = v.cat; x.src = 'manual'; x.conf = 1; scheduleSave(); }
+      else {
+        delete x.splits;
+        if (v.cat && (v.cat !== catBefore || x.src !== 'manual' || wasSplit)) assign([x.id], v.cat);
+        else if (!v.cat) { x.cat = null; x.src = 'none'; x.conf = 0; C.recategorize(S); scheduleSave(); }
+        else scheduleSave();
+      }
+      if (!t) S.settings.lastManualAccount = v.account;
+      ui.lastDir = dir;
+      if (foreign(x)) loadFx();
       render(); renderBadge();
-      toast(`${t ? 'Saved' : 'Added'}: ${v.desc}, ${fmSigned(v.amount)}${x.cat ? ` (${catName(x.cat)})` : ', category to choose in Review'}.`);
+      const what = v.splits ? ` (split ${v.splits.length} ways)` : x.cat ? ` (${catName(x.cat)})` : ', category to choose in Review';
+      toast(`${t ? 'Saved' : 'Added'}: ${v.desc}, ${fmSignedIn(v.amount, accCcy(v.account))}${what}.`);
       if (again) { txDialog(null); return; }
       d.close();
     };
     d.onclick = e => {
       const db = e.target.closest('[data-dir]');
       if (db) { dir = db.dataset.dir; $$('[data-dir]', d).forEach(b => b.setAttribute('aria-pressed', String(b === db))); return; }
+      const sp = e.target.closest('[data-sp]');
+      if (sp) {
+        const a = sp.dataset.sp;
+        if (a === 'on') { const c = $('#txCat', d).value; const tot = totalTyped(); parts = [{ cat: c, amt: tot ? tot.toFixed(2) : '' }, { cat: '', amt: '' }]; drawCat(); $('.splitrow[data-i="1"] select', d).focus(); }
+        else if (a === 'off') { const big = parts.slice().sort((p1, p2) => partVal(p2) - partVal(p1))[0]; parts = null; drawCat(); if (big && big.cat) $('#txCat', d).value = big.cat; }
+        else if (a === 'add') { const l = left(); parts.push({ cat: '', amt: l > 0 ? l.toFixed(2) : '' }); drawCat(); $(`.splitrow[data-i="${parts.length - 1}"] select`, d).focus(); }
+        return;
+      }
+      const del = e.target.closest('[data-sp-del]');
+      if (del && parts && parts.length > 2) { parts.splice(+del.closest('.splitrow').dataset.i, 1); drawCat(); return; }
       const b = e.target.closest('[data-txact]'); if (!b) return;
       const a = b.dataset.txact;
       if (a === 'cancel') { d.close(); return; }
       if (a === 'save' || a === 'again') { save(a === 'again'); return; }
+      if (a === 'revert' && t && t.orig) {
+        const before = { date: t.date, amount: t.amount, desc: t.desc, account: t.account };
+        Object.assign(t, t.orig, { key: C.merchantKey(t.orig.desc) }); delete t.orig;
+        C.recategorize(S); scheduleSave(); d.close(); render(); renderBadge();
+        toast('Put back the statement’s values.', { action: { label: 'Undo', fn: () => { t.orig = { date: t.date, amount: t.amount, desc: t.desc, account: t.account }; Object.assign(t, before, { key: C.merchantKey(before.desc) }); scheduleSave(); render(); } } });
+        return;
+      }
       if (a === 'delete' && t) {
         const at = S.transactions.indexOf(t);
         S.transactions = S.transactions.filter(x => x !== t); ui.sel.delete(t.id); scheduleSave(); d.close(); render(); renderBadge();
         toast(`Deleted ${t.desc}.`, { action: { label: 'Undo', fn: () => { S.transactions.splice(Math.min(at, S.transactions.length), 0, t); scheduleSave(); render(); renderBadge(); toast('Transaction restored.'); } } });
       }
     };
+    d.oninput = e => {
+      const row = e.target.closest('.splitrow');
+      if (row && e.target.matches('[data-sp-amt]')) { parts[+row.dataset.i].amt = e.target.value; showLeft(); return; }
+      if (e.target.id === 'txAmt') showLeft();
+      if (e.target.id === 'txAcct') showCcy();
+    };
+    d.onchange = e => {
+      const row = e.target.closest('.splitrow');
+      if (row && e.target.matches('[data-sp-cat]')) parts[+row.dataset.i].cat = e.target.value;
+      if (e.target.id === 'txAcct') showCcy();
+    };
     d.onkeydown = e => { if (e.key === 'Enter' && (e.target.matches('input') && !e.target.closest('.df') || (e.target.matches('textarea') && (e.metaKey || e.ctrlKey)))) { e.preventDefault(); save(false); } };
     d.oncancel = null;
     if (!d.open) d.showModal();
-    (t ? $('#txAmt', d) : $('#txAmt', d)).focus();
+    $('#txAmt', d).focus();
   }
 
   // a note on any transaction (imported or manual): shown under its description, searchable, exported, synced
@@ -7060,8 +7588,10 @@ start();
         const n = ui.sel.size;
         const ok = await modal({ title: `Delete ${plural(n, 'transaction')}?`, body: '<p>They are removed from this app. Importing the same file again brings them back.</p>', actions: [{ label: 'Cancel', value: false }, { label: 'Delete', kind: 'danger solid', value: true }] });
         if (!ok) return;
+        const removed = S.transactions.filter(t => ui.sel.has(t.id));
         S.transactions = S.transactions.filter(t => !ui.sel.has(t.id));
-        ui.sel.clear(); scheduleSave(); render(); toast(`Deleted ${plural(n, 'transaction')}.`);
+        ui.sel.clear(); scheduleSave(); render(); renderBadge();
+        toast(`Deleted ${plural(n, 'transaction')}.`, { action: { label: 'Undo', fn: () => restoreTx(removed, [], `Restored ${plural(n, 'transaction')}.`) } });
       } else if (a === 'confirm-all') {
         const groups = reviewGroups().filter(x => x.cat);
         const n = groups.reduce((s, x) => s + x.txns.length, 0);
@@ -7070,9 +7600,10 @@ start();
         groups.forEach(x => assign(x.txns.filter(needsReview).map(t => t.id), x.cat));
         render(); toast(`Confirmed ${plural(n, 'transaction')}.`);
       } else if (a === 'erase') {
-        const ok = await modal({ title: 'Erase income & spending data?', body: '<p>All transactions, categories, budgets, rules and everything the app has learned are deleted from this browser. Investments and net worth data stay. Download a backup first if you might want them back.</p>' + (window.MfpSync && window.MfpSync.on ? '<p><b>Sync is on:</b> your other devices are erased too the next time they sync. To erase only this device, turn sync off first.</p>' : ''), actions: [{ label: 'Cancel', value: false }, { label: 'Erase income & spending', kind: 'danger solid', value: true }] });
+        const ok = await modal({ title: 'Erase income & spending data?', body: '<p>All transactions, categories, budgets, rules and everything the app has learned are deleted from this browser. Investments and net worth data stay. A restore point is saved first, so you can go back (Restore).</p>' + (window.MfpSync && window.MfpSync.on ? '<p><b>Sync is on:</b> your other devices are erased too the next time they sync. To erase only this device, turn sync off first.</p>' : ''), actions: [{ label: 'Cancel', value: false }, { label: 'Erase income & spending', kind: 'danger solid', value: true }] });
         if (!ok) return;
-        S = C.freshState(); setCurrency(); applyTheme(); await flushSave(); go('dashboard'); toast('Everything was erased.');
+        if (window.Shell && window.Shell.restorePoint) await window.Shell.restorePoint('Before erasing income & spending');
+        S = C.freshState(); setCurrency(); applyTheme(); await flushSave(); go('dashboard'); toast('Income & spending was erased. To undo it, go back to the restore point saved just before (Restore).');
       }
     });
 
@@ -7111,6 +7642,8 @@ start();
         Object.assign(ui.tx, { q: '', merchant: '', page: 0, cat: PSEUDO[id] ? 'uncat' : id, flow: id === '__in' ? 'in' : id === '__out' ? 'out' : 'all' });
         go('transactions'); return;
       }
+      const trc = t.closest('[data-trcat]');
+      if (trc) { ui.trCat = trc.dataset.trcat; render(); const c = $('#trChart'); if (c && c.getBoundingClientRect().top < 0) c.scrollIntoView({ block: 'center' }); return; }
       const mer = t.closest('[data-merchant]');
       if (mer) { Object.assign(ui.tx, { q: '', cat: 'all', flow: 'all', page: 0, merchant: mer.dataset.merchant }); go('transactions'); return; }
       // review
@@ -7151,7 +7684,11 @@ start();
       }
       // memory
       const mdel = t.closest('[data-mem-del]');
-      if (mdel) { const key = mdel.closest('tr').dataset.mem; delete S.memory[key]; C.recategorize(S); scheduleSave(); render(); toast(`Forgot ${key}. Transactions you confirmed keep their category.`); return; }
+      if (mdel) {
+        const key = mdel.closest('tr').dataset.mem, snap = catSnapshot();
+        delete S.memory[key]; C.recategorize(S); scheduleSave(); render(); renderBadge();
+        toast(`Forgot ${key}. Transactions you confirmed keep their category.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`${key} is remembered again.`); } } }); return;
+      }
       const mpg = t.closest('[data-mem-page]');
       if (mpg) { ui.memPage += +mpg.dataset.memPage; render(); return; }
       // data
@@ -7162,9 +7699,11 @@ start();
         const n = S.transactions.filter(x => x.importId === id).length;
         const ok = await modal({ title: `Remove ${imp ? imp.file : 'this import'}?`, body: `<p>${plural(n, 'transaction')} from this file ${n === 1 ? 'is' : 'are'} deleted. What the app learned from them stays.</p>`, actions: [{ label: 'Cancel', value: false }, { label: 'Remove', kind: 'danger solid', value: true }] });
         if (!ok) return;
+        const removed = S.transactions.filter(x => x.importId === id);
         S.transactions = S.transactions.filter(x => x.importId !== id);
         S.imports = S.imports.filter(i => i.id !== id);
-        scheduleSave(); render(); toast(`Removed ${plural(n, 'transaction')}.`); return;
+        scheduleSave(); render(); renderBadge();
+        toast(`Removed ${imp ? imp.file : 'the file'}: ${plural(n, 'transaction')}.`, { action: { label: 'Undo', fn: () => restoreTx(removed, imp ? [imp] : [], `${imp ? imp.file : 'The file'} is back.`) } }); return;
       }
       const adel = t.closest('[data-acc-del]');
       if (adel) {
@@ -7172,8 +7711,12 @@ start();
         const n = S.transactions.filter(x => x.account === name).length;
         const ok = await modal({ title: `Delete ${name}?`, body: `<p>${plural(n, 'transaction')} in this account ${n === 1 ? 'is' : 'are'} deleted. What the app learned from them stays.</p>`, actions: [{ label: 'Cancel', value: false }, { label: 'Delete account', kind: 'danger solid', value: true }] });
         if (!ok) return;
+        const removed = S.transactions.filter(x => x.account === name);
         S.transactions = S.transactions.filter(x => x.account !== name);
-        scheduleSave(); render(); toast(`Deleted ${name}.`); return;
+        const prevAcc = S.settings.account;
+        if (S.settings.account === name) S.settings.account = 'all';
+        scheduleSave(); render(); renderBadge();
+        toast(`Deleted ${name}.`, { action: { label: 'Undo', fn: () => { S.settings.account = prevAcc; restoreTx(removed, [], `${name} is back.`); } } }); return;
       }
       const fdel = t.closest('[data-fmt-del]');
       if (fdel) { delete S.formats[fdel.closest('tr').dataset.fmt]; scheduleSave(); render(); toast('Layout forgotten. The next import from that bank starts from scratch.'); return; }
@@ -7196,6 +7739,7 @@ start();
         ui.sel.clear(); render(); toast(`Filed ${plural(ids.length, 'transaction')} under ${catName(c)}.`); return;
       }
       if (t.matches('[data-tx]')) { ui.tx[t.dataset.tx] = t.value; ui.tx.page = 0; ui.sel.clear(); render(); return; }
+      if (t.matches('[data-tr]')) { const k = t.dataset.tr; if (k === 'year') ui.trYear = +t.value; else if (k === 'acct') ui.trAcct = t.value; else ui.trCat = t.value; render(); return; }
       if (t.matches('[data-cat-name]')) {
         const c = cat(t.closest('tr').dataset.catId), v = t.value.trim();
         if (!v) { t.value = c.name; return; }
@@ -7211,19 +7755,26 @@ start();
       if (t.matches('[data-cat-color]')) { cat(t.closest('tr').dataset.catId).color = t.value; scheduleSave(); return; }
       if (t.matches('[data-cat-type]')) { cat(t.closest('tr').dataset.catId).type = t.value; C.recategorize(S); scheduleSave(); render(); return; }
       if (t.matches('[data-mem-cat]')) {
-        const key = t.closest('tr').dataset.mem, c = t.value;
+        const key = t.closest('tr').dataset.mem, c = t.value, snap = catSnapshot();
         const ids = S.transactions.filter(x => x.key === key).map(x => x.id);
         const n = Object.values(S.memory[key].counts).reduce((a, x) => a + x, 0);
         S.memory[key] = { counts: { [c]: Math.max(1, n) }, last: c, updated: Date.now() };
         ids.forEach(id => { const x = txById(id); x.cat = c; x.src = 'manual'; x.conf = 1; });
         C.recategorize(S); scheduleSave(); render();
-        toast(`${key} now files under ${catName(c)}${ids.length ? `, including ${plural(ids.length, 'existing transaction')}` : ''}.`); return;
+        toast(`${key} now files under ${catName(c)}${ids.length ? `, including ${plural(ids.length, 'existing transaction')}` : ''}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast('Undone.'); } } }); return;
       }
       if (t.matches('[data-del]')) { ui.del[t.dataset.del] = t.value; updateDelRange(); return; }
+      if (t.matches('[data-acc-ccy]')) {
+        const name = t.closest('tr').dataset.acc, c = t.value;
+        setAccCcy(name, c); scheduleSave(); render(); renderBadge();
+        if (c !== homeCcy()) loadFx();
+        toast(`${name} is now in ${c}.${c !== homeCcy() ? ` Its amounts count in ${homeCcy()} at the Bank of Canada rate of each day.` : ''}`); return;
+      }
       if (t.matches('[data-acc-name]')) {
         const old = t.closest('tr').dataset.acc, v = t.value.trim();
         if (!v || v === old) { t.value = old; return; }
         const merging = accounts().includes(v);
+        if (!merging && accCcy(old) !== homeCcy()) { setAccCcy(v, accCcy(old)); setAccCcy(old, null); }
         S.transactions.forEach(x => { if (x.account === old) x.account = v; });
         S.imports.forEach(i => { if (i.account === old) i.account = v; });
         Object.values(S.formats).forEach(f => { if (f.account === old) f.account = v; });
@@ -7309,6 +7860,8 @@ start();
     applyTheme();
     bind();
     render();
+    fxIndex();
+    loadFx().catch(() => {});
     if (Store.mode === 'memory') {
       toast("This browser won't let the app save from a local file, so your work disappears when you close the tab. Download a backup before closing, or open the file in Chrome, Edge or Firefox.", { timeout: 20000 });
     }
@@ -7316,7 +7869,7 @@ start();
       get state() { return S; }, get saveState() { return saveState; }, get storeMode() { return Store.mode; },
       render, go, save: scheduleSave, flush: flushSave, toast, modal,
       exportState: () => S,
-      async replaceState(st) { S = migrate(st); setCurrency(); applyTheme(); reindex(); await flushSave(); render(); },
+      async replaceState(st) { S = migrate(st); setCurrency(); applyTheme(); reindex(); await flushSave(); render(); loadFx().catch(() => {}); },
       async erase() { S = C.freshState(); setCurrency(); applyTheme(); reindex(); await flushSave(); render(); },
       // monthly income / spending (transfers excluded), same rules as the dashboard
       monthly() { reindex(); const A = aggregate(S.transactions); return A.months; },
@@ -7397,8 +7950,8 @@ function flows() { try { return T() ? T().monthly() : new Map(); } catch (e) { r
 // ===================================================================== formatting
 const nf0 = new Intl.NumberFormat('en-CA', { maximumFractionDigits: 0 });
 const nf2 = new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const ui = { view: 'networth', month: null, ccy: 'CAD', range: '3y', open: {}, showArchived: false, table: false, imp: null };
-const VIEWS = { networth: 'Net worth', balances: 'Update balances', ratios: 'Ratios', plan: 'Plan vs actual', accounts: 'Accounts', import: 'Import workbook' };
+const ui = { view: 'networth', month: null, ccy: 'CAD', range: '3y', open: {}, showArchived: false, table: false, imp: null, hRange: '1y', hNative: false, hSel: 'nw', hShut: {}, rRange: '1y', rSel: 'all' };
+const VIEWS = { networth: 'Net worth', history: 'History', balances: 'Update balances', returns: 'Returns', ratios: 'Ratios', plan: 'Plan vs actual', accounts: 'Accounts', import: 'Import workbook' };
 function toCcy(vCAD, ym) {
   if (ui.ccy === 'CAD') return vCAD;
   const fx = HC.fxFor(st, ym || ui.month || todayYm(), 'USD', CTX);
@@ -7433,7 +7986,8 @@ function toast(msg, opts) { if (window.Shell) window.Shell.toast(msg, opts); }
 
 // ===================================================================== months
 function monthsAvailable() {
-  const first = HC.firstMonth(st, CTX) || todayYm();
+  let first = HC.firstMonth(st, CTX) || todayYm();
+  if (ui.minMonth && ui.minMonth < first) first = ui.minMonth; // stepped back to enter older balances
   return HC.monthsBetween(first, todayYm());
 }
 function ensureMonth() {
@@ -7523,17 +8077,20 @@ function render() {
   $$('#navAll button').forEach(b => b.setAttribute('aria-current', b.dataset.hgo === ui.view ? 'page' : 'false'));
   $('#allTitle').textContent = VIEWS[ui.view];
   renderFilters();
-  const fn = { networth: viewNetWorth, balances: viewBalances, ratios: viewRatios, plan: viewPlan, accounts: viewAccounts, import: viewImport }[ui.view];
+  const fn = { networth: viewNetWorth, history: viewHistory, balances: viewBalances, returns: viewReturns, ratios: viewRatios, plan: viewPlan, accounts: viewAccounts, import: viewImport }[ui.view];
   const active = document.activeElement && document.activeElement.id;
   $('#allView').innerHTML = fn();
   if (active && document.getElementById(active) && $('#allView').contains(document.getElementById(active))) document.getElementById(active).focus();
+  // History: start scrolled to the latest months (they're on the right)
+  const hw = $('#allView .h-hist-wrap'); if (hw) hw.scrollLeft = hw.scrollWidth;
 }
 function renderFilters() {
   const f = $('#allFilters');
   if (!['networth', 'balances', 'ratios'].includes(ui.view)) { f.innerHTML = ''; return; }
   const ms = ensureMonth();
   const i = ms.indexOf(ui.month);
-  f.innerHTML = `<span class="h-monthnav"><button class="iconbtn" data-hstep="-1" aria-label="Earlier month" ${i <= 0 ? 'disabled' : ''}>‹</button>
+  const back = ui.view === 'balances'; // Update balances can always go further back, to fill in history
+  f.innerHTML = `<span class="h-monthnav"><button class="iconbtn" data-hstep="-1" aria-label="Earlier month" title="${back && i <= 0 ? 'Earlier month (to enter older balances)' : 'Earlier month'}" ${i <= 0 && !back ? 'disabled' : ''}>‹</button>
     <select id="hMonth" aria-label="Month">${ms.slice().reverse().map(m => `<option value="${m}" ${m === ui.month ? 'selected' : ''}>${esc(mlong(m))}</option>`).join('')}</select>
     <button class="iconbtn" data-hstep="1" aria-label="Later month" ${i >= ms.length - 1 ? 'disabled' : ''}>›</button></span>
     ${ui.view !== 'balances' ? `<div class="h-seg" role="group" aria-label="Currency"><button data-hccy="CAD" class="${ui.ccy === 'CAD' ? 'on' : ''}">CAD</button><button data-hccy="USD" class="${ui.ccy === 'USD' ? 'on' : ''}">USD</button></div>` : ''}`;
@@ -7640,7 +8197,7 @@ function viewNetWorth() {
     </dl></div>
   </div></div>`;
   h += currencyPanel(M, cur);
-  if (!ui.table) h += `<div class="h-panel"><header><h2>Month by month</h2></header>${historyTable(months.slice(-13), fl)}</div>`;
+  if (!ui.table) h += `<div class="h-panel"><header><h2>Month by month</h2><span class="spacer"></span><button class="linkbtn" data-hgo="history">Every account, month by month</button></header>${historyTable(months.slice(-13), fl)}</div>`;
   return h;
 }
 function historyTable(months, fl) {
@@ -7698,6 +8255,219 @@ function staleNote() {
     <br><button class="btn" data-harchstale="1">Archive ${list.length === 1 ? 'it' : 'them'}</button> <span class="small">Their history stays in your net worth; they just stop showing up for new months.</span></div>`;
 }
 
+// ---------------------------------------------------------------- history: every account, month by month
+const H_RANGES = [['1y', '1Y', 12], ['3y', '3Y', 36], ['5y', '5Y', 60], ['all', 'All', 99999]];
+function historyModel() {
+  const all = monthsAvailable();
+  const n = (H_RANGES.find(r => r[0] === ui.hRange) || H_RANGES[0])[2];
+  const months = all.slice(-Math.min(n, all.length));
+  const S = HC.series(st, months, CTX);
+  const cells = new Map(); // account id -> month-end row (or null) per month
+  S.forEach((M, i) => { for (const r of M.rows) { let a = cells.get(r.acc.id); if (!a) { a = new Array(months.length).fill(null); cells.set(r.acc.id, a); } a[i] = r; } });
+  // signed value in the currency being shown: liabilities negative, so every column adds up to net worth
+  const shown = (r, i) => {
+    if (!r) return null;
+    const s = r.liab ? -1 : 1;
+    if (ui.hNative) return s * r.v;
+    const v = toCcy(r.cad, months[i]);
+    return v === null ? null : s * v;
+  };
+  const groups = [];
+  for (const [g, label, side] of HC.GROUPS) {
+    const accs = st.accounts.filter(a => (HC.CATS[a.cat] || HC.CATS.otherA).group === g && cells.has(a.id));
+    if (!accs.length) continue;
+    const rows = accs.map(a => ({ key: 'a:' + a.id, acc: a, label: a.name, ccy: a.links && a.links.length ? 'CAD' : a.ccy, cells: cells.get(a.id), vals: cells.get(a.id).map(shown) }));
+    // subtotals are always in C$ (or US$): accounts in different currencies can't be added in their own
+    const sub = months.map((m, i) => { let t = 0, any = false; for (const r of rows) { const c = r.cells[i]; if (c) { any = true; t += (c.liab ? -1 : 1) * c.cad; } } return any ? toCcy(t, m) : null; });
+    groups.push({ g, key: 'g:' + g, label, side, rows, sub });
+  }
+  const tot = k => S.map((M, i) => (M.any ? toCcy(k === 'assets' ? M.assets : k === 'liabs' ? -M.liabs : M.nw, months[i]) : null));
+  const hidden = st.accounts.filter(a => !cells.has(a.id)).length;
+  return { months, S, groups, assets: tot('assets'), liabs: tot('liabs'), nw: tot('nw'), hidden };
+}
+function historySeries(H, key) {
+  if (key === 'nw') return { label: 'Net worth', vals: H.nw, ccy: null };
+  if (key === 'assets') return { label: 'Total assets', vals: H.assets, ccy: null };
+  if (key === 'liabs') return { label: 'Total liabilities', vals: H.liabs.map(v => (v === null ? null : -v)), ccy: null, owed: true };
+  for (const g of H.groups) {
+    if (g.key === key) return { label: g.label, vals: g.side === 'liab' ? g.sub.map(v => (v === null ? null : -v)) : g.sub, ccy: null, owed: g.side === 'liab' };
+    for (const r of g.rows) if (r.key === key) return { label: r.label, vals: r.acc && HC.isLiab(r.acc) ? r.vals.map(v => (v === null ? null : -v)) : r.vals, ccy: ui.hNative ? r.ccy : null, owed: HC.isLiab(r.acc), acc: r.acc };
+  }
+  return null;
+}
+function viewHistory() {
+  if (!hasAnyData()) return `<div class="empty"><b>No balances yet</b>Enter this month's balances, or import your workbook, and every account's history shows up here.<div style="margin-top:12px"><button class="btn primary" data-hgo="balances">Update balances</button> <button class="btn" data-hgo="import">Import workbook</button></div></div>`;
+  const H = historyModel(), { months } = H;
+  const unit = ui.hNative ? 'own currency' : pre();
+  const sym = c => (c === 'USD' ? 'US$' : c === 'KRW' ? '₩' : c === 'CAD' ? '' : c + ' ');
+  const num = (v, c) => (v === null || v === undefined || !isFinite(v) ? '<span class="h-faint">–</span>' : `<span class="${v < -0.5 ? 'h-neg' : ''}">${v < -0.5 ? '−' : ''}${c ? sym(c) : ''}${nf0.format(Math.abs(Math.round(v)))}</span>`);
+  const cell = (r, i, v, ccy) => {
+    const c = r && r.cells[i];
+    if (!c) return '<td class="n"><span class="h-faint">–</span></td>';
+    const how = c.src === 'carried' ? `No balance entered: the ${mlabel(c.from)} value is carried forward` : c.src === 'live' ? `From Investments, valued ${c.asOf}` : c.src === 'snapshot' ? `From the Investments snapshot of ${c.asOf}` : c.src === 'imported' ? 'From your workbook' : 'Entered';
+    return `<td class="n${c.src === 'carried' ? ' h-carry' : ''}" title="${esc(how)}">${num(v, ccy)}</td>`;
+  };
+  // selected row: chart and summary
+  let sel = historySeries(H, ui.hSel);
+  if (!sel) { ui.hSel = 'nw'; sel = historySeries(H, 'nw'); }
+  const vals = sel.vals, idx = vals.map((v, i) => (v === null ? -1 : i)).filter(i => i >= 0);
+  const fmtSel = v => (sel.ccy ? `${sym(sel.ccy) || 'C$'}${nf0.format(Math.round(v))}` : `${pre()}${nf0.format(Math.round(v))}`);
+  let stats = '';
+  if (idx.length) {
+    const a = idx[0], b = idx[idx.length - 1], d = vals[b] - vals[a];
+    const hiI = idx.reduce((x, i) => (vals[i] > vals[x] ? i : x), a), loI = idx.reduce((x, i) => (vals[i] < vals[x] ? i : x), a);
+    stats = `<div class="h-hist-stats"><span>${esc(mlabel(months[a]))} <b>${fmtSel(vals[a])}</b></span><span>${esc(mlabel(months[b]))} <b>${fmtSel(vals[b])}</b></span>
+      <span>Change <b class="${(sel.owed ? -d : d) < -0.5 ? 'h-neg' : ''}">${d > 0.5 ? '+' : d < -0.5 ? '−' : ''}${fmtSel(Math.abs(d)).replace('-', '')}</b>${Math.abs(vals[a]) > 0.5 ? ` (${d >= 0 ? '+' : '−'}${Math.abs(d / vals[a] * 100).toFixed(1)}%)` : ''}</span>
+      <span>High <b>${fmtSel(vals[hiI])}</b> ${esc(mlabel(months[hiI]))}</span><span>Low <b>${fmtSel(vals[loI])}</b> ${esc(mlabel(months[loI]))}</span></div>`;
+  }
+  const chart = lineChart('hist', months, [{ name: sel.label + (sel.owed ? ' (owed)' : ''), cls: 's1', values: vals, area: !sel.owed, tipFmt: fmtSel }], { zero: false });
+  const lbl = (key, text, extra = '') => `<button class="h-hist-lbl${ui.hSel === key ? ' on' : ''}" data-hsel="${esc(key)}" title="Chart ${esc(text)}">${esc(text)}</button>${extra}`;
+  let body = '', lastSide = null;
+  for (const g of H.groups) {
+    if (g.side !== lastSide) {
+      lastSide = g.side;
+      const k = g.side === 'liab' ? 'liabs' : 'assets', v = H[k];
+      body += `<tr class="h-hist-side ${g.side}"><td>${lbl(k, g.side === 'liab' ? 'Liabilities' : 'Assets')}</td>${v.map(x => `<td class="n">${num(x)}</td>`).join('')}</tr>`;
+    }
+    const shut = !!ui.hShut[g.g];
+    body += `<tr class="h-hist-grp"><td><button class="h-hist-tog" data-hshut="${esc(g.g)}" aria-expanded="${shut ? 'false' : 'true'}" aria-label="${shut ? 'Show' : 'Hide'} ${esc(g.label)} accounts">${shut ? '▸' : '▾'}</button>${lbl(g.key, g.label, ` <span class="h-faint small">${g.rows.length}</span>`)}</td>${g.sub.map(x => `<td class="n">${num(x)}</td>`).join('')}</tr>`;
+    if (!shut) for (const r of g.rows) {
+      body += `<tr class="h-hist-acc${r.acc.archived ? ' h-faint' : ''}"><td>${lbl(r.key, r.label)}${(() => { const sub = [r.ccy !== 'CAD' ? r.ccy : '', r.acc.archived ? 'archived' : '', r.acc.links && r.acc.links.length ? 'from Investments' : ''].filter(Boolean); return sub.length ? `<span class="h-sub">${esc(sub.join(' · '))}</span>` : ''; })()}</td>${months.map((m, i) => cell(r, i, r.vals[i], ui.hNative && r.ccy !== 'CAD' ? r.ccy : null)).join('')}</tr>`;
+    }
+  }
+  const chg = H.nw.map((v, i) => (i && v !== null && H.nw[i - 1] !== null ? v - H.nw[i - 1] : null));
+  body += `<tr class="total"><td>${lbl('nw', 'Net worth')}</td>${H.nw.map(x => `<td class="n"><b>${num(x)}</b></td>`).join('')}</tr>
+    <tr class="h-hist-chg"><td>Change from the month before</td>${chg.map(x => `<td class="n">${x === null ? '<span class="h-faint">–</span>' : `<span class="${x < -0.5 ? 'h-neg' : ''}">${x > 0.5 ? '+' : x < -0.5 ? '−' : ''}${nf0.format(Math.abs(Math.round(x)))}</span>`}</td>`).join('')}</tr>`;
+  return `<div class="h-panel" style="margin-bottom:20px"><header><h2>${esc(sel.label)}</h2><span class="spacer"></span>
+      <div class="h-seg" role="group" aria-label="Range">${H_RANGES.map(([k, l]) => `<button data-hhrange="${k}" class="${ui.hRange === k ? 'on' : ''}">${l}</button>`).join('')}</div></header>
+    ${stats}${chart}</div>
+    <div class="h-panel"><header><h2>Month-end balances</h2><span class="h-faint small">${months.length > 1 ? `${esc(mlabel(months[0]))} to ${esc(mlabel(months[months.length - 1]))}` : esc(mlabel(months[0]))}</span><span class="spacer"></span>
+      <div class="h-seg" role="group" aria-label="Currency shown"><button data-hhccy="CAD" class="${!ui.hNative && ui.ccy === 'CAD' ? 'on' : ''}">C$</button><button data-hhccy="USD" class="${!ui.hNative && ui.ccy === 'USD' ? 'on' : ''}">US$</button><button data-hhccy="native" class="${ui.hNative ? 'on' : ''}" title="Each account in its own currency; subtotals stay in C$">Own currency</button></div>
+      <button class="btn sm" data-hcsv="1">Download CSV</button></header>
+      <div class="h-wrap h-hist-wrap"><table class="h-hist tk-off" aria-label="Month-end balance of every account"><thead><tr><th>${ui.hNative ? 'Account' : `Account <span class="h-faint">(${esc(unit)})</span>`}</th>${months.map(m => `<th class="n"><button class="h-hist-m" data-hmonth-bal="${m}" title="Update balances for ${esc(mlong(m))}">${esc(mlabel(m))}</button></th>`).join('')}</tr></thead>
+      <tbody>${body}</tbody></table></div>
+      <p class="h-note">Liabilities show as negative so each month adds up to your net worth.${ui.hNative ? ' Subtotals and totals are in C$.' : ` USD and other currencies are converted at each month's rate.`} Greyed numbers are carried forward from an earlier month because nothing was entered. Click a name to chart it, or a month to update its balances.${H.hidden ? ` ${H.hidden} account${H.hidden === 1 ? '' : 's'} with no balance in these months ${H.hidden === 1 ? 'is' : 'are'} left out.` : ''}</p></div>`;
+}
+function historyCsv() {
+  const H = historyModel(), { months } = H;
+  const q = v => { const s = String(v === null || v === undefined ? '' : v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const n2 = v => (v === null || v === undefined || !isFinite(v) ? '' : (Math.round(v * 100) / 100).toFixed(2));
+  const unit = ui.hNative ? 'own currency (subtotals CAD)' : ui.ccy;
+  const lines = [['Account', 'Group', 'Asset or liability', 'Currency', ...months].map(q).join(',')];
+  for (const g of H.groups) {
+    for (const r of g.rows) lines.push([r.label, g.label, g.side === 'liab' ? 'Liability' : 'Asset', ui.hNative ? r.ccy : ui.ccy, ...r.vals.map(n2)].map(q).join(','));
+    lines.push([`Subtotal: ${g.label}`, g.label, g.side === 'liab' ? 'Liability' : 'Asset', ui.hNative ? 'CAD' : ui.ccy, ...g.sub.map(n2)].map(q).join(','));
+  }
+  const tc = ui.hNative ? 'CAD' : ui.ccy;
+  lines.push(['Total assets', '', 'Asset', tc, ...H.assets.map(n2)].map(q).join(','));
+  lines.push(['Total liabilities', '', 'Liability', tc, ...H.liabs.map(n2)].map(q).join(','));
+  lines.push(['Net worth', '', '', tc, ...H.nw.map(n2)].map(q).join(','));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `balances-by-month-${months[0]}-to-${months[months.length - 1]}${ui.hNative ? '' : '-' + ui.ccy}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`Downloaded ${months.length} months of balances (${unit}).`);
+}
+
+// ---------------------------------------------------------------- returns: growth apart from what you put in
+const R_RANGES = [['ytd', 'YTD'], ['1y', '1Y', 12], ['3y', '3Y', 36], ['5y', '5Y', 60], ['all', 'All']];
+function returnsMonths() {
+  const all = monthsAvailable(), now = todayYm();
+  if (ui.rRange === 'ytd') return all.filter(m => m >= now.slice(0, 4) + '-01');
+  if (ui.rRange === 'all') return all.slice(1); // the first month is the starting point
+  const n = (R_RANGES.find(r => r[0] === ui.rRange) || R_RANGES[1])[2];
+  return all.slice(-Math.min(n, Math.max(1, all.length - 1)));
+}
+function viewReturns() {
+  const months = returnsMonths();
+  const R = months.length ? HC.returns(st, months, CTX) : { per: [], total: {}, months: [] };
+  const seg = `<div class="h-seg" role="group" aria-label="Period">${R_RANGES.map(([k, l]) => `<button data-hrr="${k}" class="${ui.rRange === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  if (!R.per.length) return `<div class="h-panel"><header><h2>Investment returns</h2><span class="spacer"></span>${seg}</header><div class="empty"><b>No investment balances in this period</b>Investment, retirement and crypto accounts show up here once they have month-end balances (from Update balances, your workbook, or the Investments mode).</div></div>`;
+  const sgn = (v, ym) => money(v, ym, { sign: true });
+  const ret = f => (f === null || f === undefined || !isFinite(f) ? '<span class="h-faint">–</span>' : `<span class="${f < 0 ? 'h-neg' : ''}">${f > 0 ? '+' : f < 0 ? '−' : ''}${Math.abs(f * 100).toFixed(1)}%</span>`);
+  const T = R.total, endYm = R.months[R.months.length - 1], startYm = R.months[0];
+  const sel = ui.rSel === 'all' ? null : R.per.find(r => r.acc.id === ui.rSel);
+  if (ui.rSel !== 'all' && !sel) ui.rSel = 'all';
+  const labels = R.months, conv = (v, i) => (v === null ? null : toCcy(v, labels[i]));
+  let value, putIn, title;
+  if (sel) {
+    value = sel.held.map((v, i) => (i > sel.e ? null : v));
+    let acc = null; putIn = sel.V.map((v, i) => { if (i < sel.s || i > sel.e) return null; acc = i === sel.s ? sel.start : acc + sel.C[i]; return acc; });
+    title = sel.acc.name;
+  } else { value = R.value; putIn = R.putIn; title = 'All investment accounts'; }
+  // values only where there's a reading; carry the line across gaps
+  let last = null; const vLine = value.map(v => (v === null ? last : (last = v)));
+  const chart = lineChart('ret', labels, [
+    { name: 'Value', cls: 's1', values: vLine.map(conv), area: true, tipFmt: v => pre() + nf0.format(Math.round(v)) },
+    { name: 'What you put in', cls: 's3', values: putIn.map(conv), dash: true, tipFmt: v => pre() + nf0.format(Math.round(v)) },
+  ], { zero: false });
+  const S = sel || T;
+  const span = S === T ? `${mlabel(startYm)} to ${mlabel(endYm)}` : `${mlabel(sel.startYm)} to ${mlabel(sel.endYm)}`;
+  const tiles = `<div class="h-tiles">
+    <div class="h-tile hero"><div class="label">Growth · ${esc(span)}</div><div class="value">${sgn(S.gain, endYm)}</div><div class="sub">Return ${ret(S.twr)}${S.ann !== null && S.ann !== undefined ? ` · ${ret(S.ann)} a year` : ''}</div></div>
+    <div class="h-tile"><div class="label">Value at the start</div><div class="value">${money(S.start, startYm)}</div><div class="sub">${S === T ? `${R.per.length} account${R.per.length === 1 ? '' : 's'}${R.per.some(r => r.startYm !== startYm) ? ', some counted from when they started' : ''}` : esc(sel.ccy)}</div></div>
+    <div class="h-tile"><div class="label">You put in</div><div class="value">${sgn(S.contrib, endYm)}</div><div class="sub">${S.contrib < -0.5 ? 'more taken out than put in' : 'contributions, net of withdrawals'}</div></div>
+    <div class="h-tile"><div class="label">Value now</div><div class="value">${money(S.end, endYm)}</div><div class="sub">${esc(mlabel(S === T ? endYm : sel.endYm))}</div></div>
+  </div>`;
+  const rows = R.per.slice().sort((a, b) => b.end - a.end).map(r => `<tr class="click${ui.rSel === r.acc.id ? ' sel' : ''}" data-hrsel="${esc(r.acc.id)}" tabindex="0">
+    <td>${esc(r.acc.name)}<span class="h-sub">${esc(catLabel(r.acc.cat))}${r.ccy !== 'CAD' ? ` · ${esc(r.ccy)}` : ''}${r.startYm !== startYm ? ` · from ${esc(mlabel(r.startYm))}` : ''}${r.endYm !== endYm ? ` · last balance ${esc(mlabel(r.endYm))}` : ''}</span></td>
+    <td class="n">${money(r.start, r.startYm)}</td><td class="n">${money(r.contrib, endYm, { sign: true, dash: true })}</td><td class="n">${sgn(r.gain, endYm)}</td><td class="n">${money(r.end, r.endYm)}</td>
+    <td class="n">${ret(r.twr)}</td><td class="n">${ret(r.ann)}</td>
+    <td class="n"><button class="btn sm" data-hcontrib-edit="${esc(r.acc.id)}" title="What you put into ${esc(r.acc.name)} each month">Contributions</button></td></tr>`).join('');
+  return `${R.entered ? '' : `<div class="h-callout"><b>Add what you put in, for a true return.</b> Until you enter your contributions, they count as growth. Enter them each month on <button class="linkbtn" data-hgo="balances">Update balances</button>, or for past months with the Contributions button next to each account below.</div>`}
+    <div class="h-panel" style="margin-bottom:20px"><header><h2>${esc(title)}</h2>${sel ? '<button class="linkbtn" data-hrsel="all">Show all accounts</button>' : ''}<span class="spacer"></span>${seg}</header>
+      ${tiles}${chart}</div>
+    <div class="h-panel"><header><h2>By account</h2><span class="h-faint small">click one to chart it</span></header>
+      <div class="h-wrap"><table class="h-table"><thead><tr><th>Account</th><th class="n">Start value</th><th class="n">Put in</th><th class="n">Growth</th><th class="n">Value now</th><th class="n" title="Time-weighted: what each dollar invested earned, whatever you added or took out">Return</th><th class="n">A year</th><th></th></tr></thead>
+      <tbody>${rows}<tr class="total click${ui.rSel === 'all' ? ' sel' : ''}" data-hrsel="all" tabindex="0"><td>All investment accounts</td><td class="n">${money(T.start, startYm)}</td><td class="n">${money(T.contrib, endYm, { sign: true, dash: true })}</td><td class="n">${sgn(T.gain, endYm)}</td><td class="n">${money(T.end, endYm)}</td><td class="n">${ret(T.twr)}</td><td class="n">${ret(T.ann)}</td><td></td></tr></tbody></table></div>
+      <p class="h-note">Growth = value now − value at the start − what you put in. Return is time-weighted from month-end balances: each month's growth is divided by what was invested at its start plus half of that month's contributions, and the months are chained, so adding or taking out money doesn't change it. "A year" shows periods longer than 12 months as a yearly rate. In C$, exchange-rate moves on US-dollar accounts are part of growth. Months without a new balance (carried forward) are bridged.</p></div>`;
+}
+function contribDialog(id) {
+  const a = st.accounts.find(x => x.id === id); if (!a) return;
+  const ccy = a.links && a.links.length ? 'CAD' : a.ccy, sym = ccy === 'USD' ? 'US$' : ccy === 'KRW' ? '₩' : 'C$';
+  const ms = monthsAvailable().slice(-240).reverse(); // newest first, back to the first month with any balance
+  const d = $('#homeDlg');
+  const fmtv = v => (v ? nf2.format(v) : '');
+  d.innerHTML = `<div class="dlg-head"><h3>What you put into ${esc(a.name)}</h3></div>
+    <form class="dlg-body ctform" onsubmit="return false">
+      <p class="small muted" style="margin:0">Net of withdrawals, in ${esc(sym)}. A withdrawal is a negative number. Leave a month empty if nothing went in.</p>
+      <div class="ctfill"><span>Same amount every month:</span><input type="text" inputmode="decimal" id="ctAmt" placeholder="e.g. 500" aria-label="Amount every month">
+        <label>from <select id="ctFrom" aria-label="From month">${ms.slice().reverse().map(m => `<option value="${m}">${esc(mlabel(m))}</option>`).join('')}</select></label>
+        <label>to <select id="ctTo" aria-label="To month">${ms.map(m => `<option value="${m}">${esc(mlabel(m))}</option>`).join('')}</select></label>
+        <button type="button" class="btn sm" data-ct="fill">Fill</button></div>
+      <div class="ctlist">${ms.map(m => `<label><span>${esc(mlong(m))}</span><input type="text" inputmode="decimal" data-ctm="${m}" value="${esc(fmtv(HC.contribOf(st, m, id)))}" placeholder="0" aria-label="${esc(mlong(m))}"></label>`).join('')}</div>
+      <p class="txerr" id="ctErr" role="alert"></p>
+    </form>
+    <div class="dlg-foot"><button class="btn" data-ct="cancel">Cancel</button><button class="btn primary" data-ct="save">Save</button></div>`;
+  d.onclick = e => {
+    const b = e.target.closest('[data-ct]'); if (!b) return;
+    const k = b.dataset.ct;
+    if (k === 'cancel') { d.close(); return; }
+    if (k === 'fill') {
+      const v = HC.num($('#ctAmt', d).value); if (v === null) { $('#ctErr', d).textContent = 'Type the amount first, like 500.'; $('#ctAmt', d).focus(); return; }
+      let f = $('#ctFrom', d).value, t = $('#ctTo', d).value; if (f > t) [f, t] = [t, f];
+      $$('[data-ctm]', d).forEach(inp => { if (inp.dataset.ctm >= f && inp.dataset.ctm <= t) inp.value = nf2.format(v); });
+      $('#ctErr', d).textContent = ''; return;
+    }
+    if (k === 'save') {
+      const bad = $$('[data-ctm]', d).find(inp => inp.value.trim() && HC.num(inp.value) === null);
+      if (bad) { $('#ctErr', d).textContent = `${mlong(bad.dataset.ctm)} isn't a number.`; bad.focus(); return; }
+      let n = 0;
+      $$('[data-ctm]', d).forEach(inp => {
+        const m = inp.dataset.ctm, v = HC.num(inp.value), map = st.contrib[m] = st.contrib[m] || {};
+        if (v) { map[id] = v; n++; } else delete map[id];
+        if (!Object.keys(map).length) delete st.contrib[m];
+      });
+      save(); d.close(); render(); toast(`Saved ${n} month${n === 1 ? '' : 's'} of contributions for ${a.name}.`);
+    }
+  };
+  d.onkeydown = null; d.onchange = null; d.oncancel = null;
+  if (!d.open) d.showModal();
+  const first = $('[data-ctm]', d); if (first) first.focus();
+}
+
 // ---------------------------------------------------------------- update balances
 function viewBalances() {
   const ym = ui.month, prevYm = HC.addMonths(ym, -1);
@@ -7708,8 +8478,8 @@ function viewBalances() {
   const groups = HC.GROUPS.map(([g, label, side]) => ({ g, label, side, list: accs.filter(a => (HC.CATS[a.cat] || HC.CATS.otherA).group === g) })).filter(x => x.list.length);
   let body = '', lastSide = null;
   for (const grp of groups) {
-    if (grp.side !== lastSide) { lastSide = grp.side; body += `<tr class="grp sect ${grp.side}"><td colspan="6"><span class="h-side ${grp.side}">${grp.side === 'liab' ? 'Liabilities' : 'Assets'}</span> ${grp.side === 'liab' ? 'enter what you owe, as a positive number' : 'what you own'}</td></tr>`; }
-    body += `<tr class="grp"><td colspan="6">${esc(grp.label)}</td></tr>`;
+    if (grp.side !== lastSide) { lastSide = grp.side; body += `<tr class="grp sect ${grp.side}"><td colspan="7"><span class="h-side ${grp.side}">${grp.side === 'liab' ? 'Liabilities' : 'Assets'}</span> ${grp.side === 'liab' ? 'enter what you owe, as a positive number' : 'what you own'}</td></tr>`; }
+    body += `<tr class="grp"><td colspan="7">${esc(grp.label)}</td></tr>`;
     for (const a of grp.list) {
       const row = M.rows.find(r => r.acc.id === a.id);
       const val = HC.valueOf(st, a, ym, CTX);
@@ -7723,6 +8493,7 @@ function viewBalances() {
         <td>${ccy}</td><td class="n">${pv !== null ? plainMoney(HC.isLiab(a) ? Math.abs(pv) : pv, ccy) : '<span class="h-faint">–</span>'}</td>
         <td class="n"><input type="text" inputmode="decimal" id="bal-${esc(a.id)}" data-bal="${esc(a.id)}" value="${explicitV !== null ? esc(nf2.format(HC.isLiab(a) ? Math.abs(explicitV) : explicitV)) : ''}" placeholder="${esc(ph)}" aria-label="${esc(a.name)} balance for ${esc(mlong(ym))}"></td>
         <td class="n">${chg !== null ? (Math.abs(chg) < 0.005 ? '<span class="h-faint">–</span>' : `<span class="${chg < 0 === !HC.isLiab(a) ? 'h-neg' : ''}">${chg > 0 ? '+' : '−'}${nf0.format(Math.abs(Math.round(chg)))}</span>`) : ''}</td>
+        <td class="n">${HC.isInvest(a) ? `<input type="text" inputmode="decimal" class="h-ct" id="ct-${esc(a.id)}" data-hcontrib="${esc(a.id)}" value="${HC.contribOf(st, ym, a.id) ? esc(nf2.format(HC.contribOf(st, ym, a.id))) : ''}" placeholder="0" aria-label="Put into ${esc(a.name)} in ${esc(mlong(ym))}" title="What you put in this month, net of withdrawals (negative for a withdrawal). Used for Returns.">` : ''}</td>
         <td>${srcBadge(row)}</td></tr>`;
     }
   }
@@ -7735,10 +8506,10 @@ function viewBalances() {
       <label>KRW per CAD<input type="text" inputmode="decimal" id="fx-KRW" data-hfx="KRW" value="${fxm.KRW ? esc(fxm.KRW) : ''}" placeholder="${(() => { const f = HC.fxFor(st, ym, 'KRW', CTX); return f ? (1 / f).toFixed(1) + ' (last known)' : 'e.g. 1000'; })()}"></label>
       <label style="grid-column:span 2">Note for the month<input type="text" id="note-month" data-hnote="1" value="${esc(st.notes[ym] || '')}" placeholder="e.g. Bought a car"></label>
     </div>
-    <div class="h-wrap"><table class="h-table"><thead><tr><th>Account</th><th>Ccy</th><th class="n">${esc(mlabel(prevYm))}</th><th class="n">${esc(mlabel(ym))}</th><th class="n">Change</th><th></th></tr></thead><tbody>${body}
-      <tr class="total"><td>Assets</td><td></td><td class="n">${P.any ? 'C$' + nf0.format(Math.round(P.assets)) : ''}</td><td class="n">C$${nf0.format(Math.round(M.assets))}</td><td></td><td></td></tr>
-      <tr class="total"><td>Liabilities</td><td></td><td class="n">${P.any ? 'C$' + nf0.format(Math.round(P.liabs)) : ''}</td><td class="n">C$${nf0.format(Math.round(M.liabs))}</td><td></td><td></td></tr>
-      <tr class="total"><td>Net worth</td><td></td><td class="n">${P.any ? 'C$' + nf0.format(Math.round(P.nw)) : ''}</td><td class="n"><b>C$${nf0.format(Math.round(M.nw))}</b></td><td class="n">${P.any ? `${M.nw - P.nw >= 0 ? '+' : '−'}${nf0.format(Math.abs(Math.round(M.nw - P.nw)))}` : ''}</td><td></td></tr>
+    <div class="h-wrap"><table class="h-table"><thead><tr><th>Account</th><th>Ccy</th><th class="n">${esc(mlabel(prevYm))}</th><th class="n">${esc(mlabel(ym))}</th><th class="n">Change</th><th class="n" title="What you put into investment accounts this month, net of withdrawals. Used for Returns.">Put in</th><th></th></tr></thead><tbody>${body}
+      <tr class="total"><td>Assets</td><td></td><td class="n">${P.any ? 'C$' + nf0.format(Math.round(P.assets)) : ''}</td><td class="n">C$${nf0.format(Math.round(M.assets))}</td><td></td><td></td><td></td></tr>
+      <tr class="total"><td>Liabilities</td><td></td><td class="n">${P.any ? 'C$' + nf0.format(Math.round(P.liabs)) : ''}</td><td class="n">C$${nf0.format(Math.round(M.liabs))}</td><td></td><td></td><td></td></tr>
+      <tr class="total"><td>Net worth</td><td></td><td class="n">${P.any ? 'C$' + nf0.format(Math.round(P.nw)) : ''}</td><td class="n"><b>C$${nf0.format(Math.round(M.nw))}</b></td><td class="n">${P.any ? `${M.nw - P.nw >= 0 ? '+' : '−'}${nf0.format(Math.abs(Math.round(M.nw - P.nw)))}` : ''}</td><td></td><td></td></tr>
     </tbody></table></div></div>`;
 }
 
@@ -7982,7 +8753,13 @@ function bind() {
   $('#navAll').addEventListener('click', e => { const b = e.target.closest('[data-hgo]'); if (b) go(b.dataset.hgo); });
   const view = $('#allView'), filt = $('#allFilters');
   filt.addEventListener('click', e => {
-    const s = e.target.closest('[data-hstep]'); if (s) { const ms = monthsAvailable(); const i = ms.indexOf(ui.month) + +s.dataset.hstep; if (i >= 0 && i < ms.length) { ui.month = ms[i]; render(); } return; }
+    const s = e.target.closest('[data-hstep]');
+    if (s) {
+      const ms = monthsAvailable(); const i = ms.indexOf(ui.month) + +s.dataset.hstep;
+      if (i < 0 && ui.view === 'balances') { ui.minMonth = HC.addMonths(ms[0], -1); ui.month = ui.minMonth; render(); return; }
+      if (i >= 0 && i < ms.length) { ui.month = ms[i]; render(); }
+      return;
+    }
     const c = e.target.closest('[data-hccy]'); if (c) { ui.ccy = c.dataset.hccy; render(); }
   });
   filt.addEventListener('change', e => { if (e.target.id === 'hMonth') { ui.month = e.target.value; render(); } });
@@ -7994,6 +8771,15 @@ function bind() {
     const sg = t.closest('[data-shellgo]'); if (sg && window.Shell) { window.Shell.setMode(sg.dataset.shellgo); return; }
     if (t.closest('[data-shell="restore"]') && window.Shell) { window.Shell.restorePick(); return; }
     const r = t.closest('[data-hrange]'); if (r) { ui.range = r.dataset.hrange; render(); return; }
+    const hr = t.closest('[data-hhrange]'); if (hr) { ui.hRange = hr.dataset.hhrange; render(); return; }
+    const hc = t.closest('[data-hhccy]'); if (hc) { if (hc.dataset.hhccy === 'native') ui.hNative = true; else { ui.hNative = false; ui.ccy = hc.dataset.hhccy; } render(); return; }
+    const hs = t.closest('[data-hsel]'); if (hs) { ui.hSel = hs.dataset.hsel; render(); const p = $('#allView .h-panel'); if (p && p.getBoundingClientRect().top < 0) p.scrollIntoView({ block: 'start' }); return; }
+    const hsh = t.closest('[data-hshut]'); if (hsh) { ui.hShut[hsh.dataset.hshut] = !ui.hShut[hsh.dataset.hshut]; render(); return; }
+    const hmb = t.closest('[data-hmonth-bal]'); if (hmb) { ui.month = hmb.dataset.hmonthBal; go('balances'); return; }
+    if (t.closest('[data-hcsv]')) { historyCsv(); return; }
+    const rr = t.closest('[data-hrr]'); if (rr) { ui.rRange = rr.dataset.hrr; render(); return; }
+    const ce = t.closest('[data-hcontrib-edit]'); if (ce) { contribDialog(ce.dataset.hcontribEdit); return; }
+    const rs = t.closest('[data-hrsel]'); if (rs) { ui.rSel = rs.dataset.hrsel; render(); const p = $('#allView .h-panel'); if (p && p.getBoundingClientRect().top < 0) p.scrollIntoView({ block: 'start' }); return; }
     if (t.closest('[data-htable]')) { ui.table = !ui.table; render(); return; }
     const o = t.closest('[data-hopen]'); if (o) { ui.open[o.dataset.hopen] = !ui.open[o.dataset.hopen]; render(); return; }
     const hm = t.closest('[data-hmonth]'); if (hm) { ui.month = hm.dataset.hmonth; window.scrollTo(0, 0); render(); return; }
@@ -8044,6 +8830,14 @@ function bind() {
       const m = st.balances[ym] = st.balances[ym] || {};
       if (v === null) delete m[id]; else m[id] = { v: HC.isLiab(acc) ? Math.abs(v) : v, s: 'e' };
       save(); setTimeout(render, 0); return;
+    }
+    if (t.dataset.hcontrib) {
+      const id = t.dataset.hcontrib, ym = ui.month, v = HC.num(t.value);
+      if (t.value.trim() && v === null) { toast('Not a number'); t.value = ''; return; }
+      const m = st.contrib[ym] = st.contrib[ym] || {};
+      if (v) m[id] = v; else delete m[id];
+      if (!Object.keys(m).length) delete st.contrib[ym];
+      save(); if (v) t.value = nf2.format(v); return;
     }
     if (t.dataset.hfx) {
       const v = HC.num(t.value); const f = st.fx[ui.month] = st.fx[ui.month] || {};
@@ -8176,25 +8970,105 @@ function download(name, content) {
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
 const stamp = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-function backup() {
-  const now = Date.now();
-  if (window.__tally && window.__tally.state) { window.__tally.state.settings.lastBackup = now; window.__tally.save(); }
-  if (window.HomeApp) window.HomeApp.markBackup(now);
-  const data = {
+// everything in one object: the backup file, and what a restore point keeps
+function backupData(now = Date.now()) {
+  return {
     app: 'tally', version: 2, exportedAt: new Date(now).toISOString(),
     spending: window.__tally ? window.__tally.exportState() : null,
     investments: window.ExposureApp && window.ExposureApp.ready ? window.ExposureApp.exportState() : null,
     home: window.HomeApp ? window.HomeApp.exportState() : null,
   };
-  download(`master-financial-planner-backup-${stamp()}.json`, JSON.stringify(data));
-  foot();
-  toast('Backup downloaded: income & spending, investments and net worth in one file. Keep it somewhere safe, like a cloud drive folder.');
 }
-function restorePick() {
+const SCx = () => window.SyncCore;
+function summaryOf(d) {
+  return {
+    tx: d.spending && Array.isArray(d.spending.transactions) ? d.spending.transactions.length : 0,
+    cats: d.spending && Array.isArray(d.spending.categories) ? d.spending.categories.length : 0,
+    inv: d.investments && Array.isArray(d.investments.accounts) ? d.investments.accounts.length : 0,
+    pos: d.investments && Array.isArray(d.investments.positions) ? d.investments.positions.length : 0,
+    acc: d.home && Array.isArray(d.home.accounts) ? d.home.accounts.length : 0,
+    months: d.home && d.home.balances ? Object.keys(d.home.balances).length : 0,
+  };
+}
+const n0 = n => Number(n || 0).toLocaleString('en-CA');
+const sumText = m => [m.tx ? `${n0(m.tx)} transactions` : '', m.pos ? `${n0(m.pos)} holdings` : '', m.months ? `${n0(m.months)} months of balances` : ''].filter(Boolean).join(' · ') || 'Nothing entered yet';
+
+// a dialog of the shell's own (backup, restore, passphrase)
+function sdlg(html, onClick) {
+  const d = $('#shellDlg');
+  d.innerHTML = html;
+  d.onclick = e => { if (e.target.closest('[data-sx="close"]')) { d.close(); return; } onClick(e, d); };
+  d.oncancel = null;
+  if (!d.open) d.showModal();
+  return d;
+}
+
+function backup() {
+  let enc = false;
+  try { enc = localStorage.getItem('mfp:backupEnc') === '1'; } catch (e) { /* storage blocked */ }
+  const d = sdlg(`<div class="dlg-head"><h3>Download a backup</h3></div>
+    <form class="dlg-body bkform" onsubmit="return false">
+      <p>One file with everything: income &amp; spending, investments and net worth. Keep it somewhere safe, like a cloud drive folder.</p>
+      <label class="inline"><input type="checkbox" id="bkEnc" ${enc ? 'checked' : ''}> Protect it with a passphrase</label>
+      <div id="bkPass" class="bkpass" ${enc ? '' : 'hidden'}>
+        <label>Passphrase<input type="password" id="bkP1" autocomplete="new-password"></label>
+        <label>Type it again<input type="password" id="bkP2" autocomplete="new-password"></label>
+        <p class="small muted">The file can only be opened with this passphrase. Nobody, including this app, can recover it if it's forgotten.</p>
+      </div>
+      <p class="txerr" id="bkErr" role="alert"></p>
+    </form>
+    <div class="dlg-foot"><button class="btn" data-sx="close">Cancel</button><button class="btn primary" data-sx="go">Download backup</button></div>`, async (e, dd) => {
+    if (!e.target.closest('[data-sx="go"]')) return;
+    const on = $('#bkEnc', dd).checked, p1 = $('#bkP1', dd).value, p2 = $('#bkP2', dd).value, err = m => { $('#bkErr', dd).textContent = m; };
+    if (on && p1.length < 8) { err('Use a passphrase of at least 8 characters.'); $('#bkP1', dd).focus(); return; }
+    if (on && p1 !== p2) { err("The two passphrases don't match."); $('#bkP2', dd).focus(); return; }
+    try { localStorage.setItem('mfp:backupEnc', on ? '1' : '0'); } catch (x) { /* ignore */ }
+    const now = Date.now();
+    if (window.__tally && window.__tally.state) { window.__tally.state.settings.lastBackup = now; window.__tally.save(); }
+    if (window.HomeApp) window.HomeApp.markBackup(now);
+    const data = backupData(now);
+    let text = JSON.stringify(data);
+    if (on) { $('[data-sx="go"]', dd).disabled = true; err(''); text = await SCx().seal(data, p1, 'backup'); }
+    download(`master-financial-planner-backup-${stamp()}${on ? '-protected' : ''}.json`, text);
+    dd.close(); foot();
+    toast(on ? 'Protected backup downloaded. You need the passphrase to restore it.' : 'Backup downloaded: income & spending, investments and net worth in one file. Keep it somewhere safe, like a cloud drive folder.');
+  });
+  d.onchange = e => { if (e.target.id === 'bkEnc') { $('#bkPass', d).hidden = !e.target.checked; if (e.target.checked) $('#bkP1', d).focus(); } };
+  d.onkeydown = e => { if (e.key === 'Enter' && e.target.matches('input[type=password]')) { e.preventDefault(); $('[data-sx="go"]', d).click(); } };
+  $('[data-sx="go"]', d).focus();
+}
+function pickFile() {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = '.json,application/json';
   inp.onchange = () => { if (inp.files[0]) restoreFile(inp.files[0]); };
   inp.click();
+}
+// Restore: from a backup file, or from a restore point this browser kept
+async function restorePick() {
+  const list = await RP.list().catch(() => []);
+  const when = ts => { const d = new Date(ts), t = new Date(); const same = d.toDateString() === t.toDateString(); const y = new Date(t - 864e5).toDateString() === d.toDateString();
+    return `${same ? 'Today' : y ? 'Yesterday' : d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' })}`; };
+  sdlg(`<div class="dlg-head"><h3>Restore</h3></div>
+    <div class="dlg-body">
+      <p>Bring your data back from a backup file, or go back to a restore point.</p>
+      <button class="btn" data-sx="file">Choose a backup file…</button>
+      <h4 class="rp-h">Restore points</h4>
+      <p class="small muted" style="margin:0 0 8px">This browser saves one each day you use the app, and before big changes (restoring a backup, erasing, or sync bringing in changes from another device). They're kept for 30 days, on this device only.</p>
+      ${list.length ? `<ul class="rp-list">${list.map(p => `<li><div><b>${esc(when(p.id))}</b><span>${esc(p.reason)} · ${esc(sumText(p.sum || {}))}</span></div>
+        <button class="btn sm" data-rp-go="${p.id}">Go back to this</button><button class="iconbtn" data-rp-dl="${p.id}" title="Download as a backup file" aria-label="Download the ${esc(when(p.id))} restore point as a backup file"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M2.5 10.5v3h11v-3"/></svg></button></li>`).join('')}</ul>`
+        : '<p class="rp-none">None yet. The first one is saved today.</p>'}
+    </div>
+    <div class="dlg-foot"><button class="btn" data-sx="close">Close</button></div>`, async (e, d) => {
+    if (e.target.closest('[data-sx="file"]')) { d.close(); pickFile(); return; }
+    const go = e.target.closest('[data-rp-go]'), dl = e.target.closest('[data-rp-dl]');
+    if (!go && !dl) return;
+    const p = await RP.get(+(go || dl).dataset[go ? 'rpGo' : 'rpDl']);
+    if (!p) { toast('That restore point is gone.'); return; }
+    const data = JSON.parse(await SCx().gunzip(p.data, p.gz));
+    if (dl) { download(`master-financial-planner-restore-point-${new Date(p.id).toISOString().slice(0, 16).replace(/[T:]/g, '-')}.json`, JSON.stringify(data)); return; }
+    d.close();
+    await applyBackup(data, { from: `the restore point from ${when(p.id)}`, before: 'Before going back to a restore point' });
+  });
 }
 // What's in a backup file: combined (this app), an old Tally backup, or an old Exposure backup.
 function classify(data) {
@@ -8205,27 +9079,144 @@ function classify(data) {
   if (st && Array.isArray(st.accounts) && Array.isArray(st.positions)) return { investments: st, at: data.saved };
   return null;
 }
+function askPass(fileName, msg) {
+  return new Promise(resolve => {
+    let done = false;
+    const d = sdlg(`<div class="dlg-head"><h3>Protected backup</h3></div>
+      <form class="dlg-body bkform" onsubmit="return false"><p>${esc(fileName)} is protected with a passphrase.</p>
+        <label>Passphrase<input type="password" id="bkOpen" autocomplete="current-password"></label><p class="txerr" id="bkErr" role="alert">${esc(msg || '')}</p></form>
+      <div class="dlg-foot"><button class="btn" data-sx="close">Cancel</button><button class="btn primary" data-sx="open">Open</button></div>`, (e, dd) => {
+      if (!e.target.closest('[data-sx="open"]')) return;
+      done = true; const v = $('#bkOpen', dd).value; dd.close(); resolve(v);
+    });
+    d.onkeydown = e => { if (e.key === 'Enter' && e.target.id === 'bkOpen') { e.preventDefault(); $('[data-sx="open"]', d).click(); } };
+    d.addEventListener('close', () => { if (!done) resolve(null); }, { once: true });
+    $('#bkOpen', d).focus();
+  });
+}
 async function restoreFile(file) {
   let data;
   try { data = JSON.parse(await file.text()); } catch (e) { toast("That file isn't a backup."); return; }
+  if (SCx() && SCx().isSealed(data)) {
+    let msg = '';
+    for (;;) {
+      const pass = await askPass(file.name, msg);
+      if (pass === null) return;
+      try { data = await SCx().unseal(data, pass); break; } catch (e) { if (e.code !== 'bad-pass') { toast(e.message); return; } msg = e.message; }
+    }
+  }
+  await applyBackup(data, { before: 'Before restoring a backup' });
+}
+async function applyBackup(data, { from = 'This backup', before = 'Before restoring' } = {}) {
   const parts = classify(data);
   if (!parts || !(parts.spending || parts.investments || parts.home)) { toast("That file isn't a backup from this app, Tally or Exposure."); return; }
   const list = [];
   if (parts.spending) list.push(`<li><b>Income &amp; spending</b>: ${parts.spending.transactions.length.toLocaleString('en-CA')} transactions, ${parts.spending.categories.length} categories</li>`);
   if (parts.investments) list.push(`<li><b>Investments</b>: ${parts.investments.accounts.length} accounts, ${parts.investments.positions.length} holdings</li>`);
   if (parts.home) list.push(`<li><b>Net worth</b>: ${parts.home.accounts.length} accounts, ${Object.keys(parts.home.balances || {}).length} months of balances</li>`);
-  const body = `<p>This backup${parts.at ? ` from ${esc(new Date(parts.at).toLocaleDateString('en-CA', { dateStyle: 'medium' }))}` : ''} holds:</p><ul>${list.join('')}</ul><p>What's in this app now for ${list.length > 1 ? 'those parts' : 'that part'} is replaced. Anything not in the backup stays as it is.</p>`;
+  const label = from === 'This backup' ? `This backup${parts.at ? ` from ${esc(new Date(parts.at).toLocaleDateString('en-CA', { dateStyle: 'medium' }))}` : ''}` : esc(from.charAt(0).toUpperCase() + from.slice(1));
+  const body = `<p>${label} holds:</p><ul>${list.join('')}</ul><p>What's in this app now for ${list.length > 1 ? 'those parts' : 'that part'} is replaced. Anything not in it stays as it is. A restore point of what's here now is saved first.</p>`;
   const ok = window.__tally && window.__tally.modal
-    ? await window.__tally.modal({ title: 'Restore this backup?', body, actions: [{ label: 'Cancel', value: false }, { label: 'Replace with backup', kind: 'danger solid', value: true }] })
-    : window.confirm('Restore this backup? The matching parts are replaced.');
+    ? await window.__tally.modal({ title: from === 'This backup' ? 'Restore this backup?' : 'Go back to this restore point?', body, actions: [{ label: 'Cancel', value: false }, { label: from === 'This backup' ? 'Replace with backup' : 'Go back', kind: 'danger solid', value: true }] })
+    : window.confirm('Restore? The matching parts are replaced.');
   if (!ok) return;
+  await restorePoint(before).catch(() => {});
   if (parts.spending && window.__tally) await window.__tally.replaceState(parts.spending);
   if (parts.investments && window.ExposureApp) await window.ExposureApp.importState(parts.investments);
   if (parts.home && window.HomeApp) await window.HomeApp.importState(parts.home);
   else if (window.HomeApp) window.HomeApp.render();
   foot();
-  toast('Backup restored.');
+  toast(from === 'This backup' ? 'Backup restored.' : 'Back to the restore point.');
 }
+
+// ---------------------------------------------------------------- restore points (kept in this browser)
+const RP = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    try { const r = indexedDB.open('mfp-restore', 1); r.onupgradeneeded = () => r.result.createObjectStore('points', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }
+    catch (e) { rej(e); }
+  }));
+  const run = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction('points', mode); const q = fn(t.objectStore('points')); t.oncomplete = () => res(q ? q.result : undefined); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); };
+  return {
+    list: async () => ((await run('readonly', st => st.getAll())) || []).sort((a, b) => b.id - a.id),
+    get: id => run('readonly', st => st.get(id)),
+    put: p => run('readwrite', st => st.put(p)),
+    del: id => run('readwrite', st => st.delete(id)),
+  };
+})();
+const allReady = () => !!(window.__tally && window.__tally.state && window.HomeApp && window.HomeApp.state && window.ExposureApp && window.ExposureApp.ready);
+let rpBusy = null;
+async function restorePoint(reason, { minGap = 0 } = {}) {
+  if (window.__mfpInactive || !allReady() || !SCx()) return null;
+  if (rpBusy) await rpBusy.catch(() => {});
+  rpBusy = (async () => {
+    const data = backupData(), sum = summaryOf(data);
+    if (!sum.tx && !sum.pos && !sum.months) return null; // nothing worth keeping yet
+    const json = JSON.stringify(Object.assign({}, data, { exportedAt: null }));
+    const hash = await SCx().hash(json);
+    const list = await RP.list();
+    const last = list[0];
+    if (last && last.hash === hash) return null; // the newest one already holds exactly this
+    if (minGap && last && Date.now() - last.id < minGap) return null;
+    const bytes = await SCx().gzip(JSON.stringify(data));
+    const p = { id: Date.now(), reason, hash, sum, size: bytes.length, gz: SCx().canGzip, data: bytes };
+    await RP.put(p);
+    // keep 30 days (one daily point per day), never fewer than the newest 5, at most 60
+    const all = [p].concat(list), cut = Date.now() - 30 * 864e5, days = new Set(), keep = [];
+    all.forEach((x, i) => {
+      const day = new Date(x.id).toDateString();
+      const ok = i < 5 || (x.id >= cut && !(x.reason === 'Daily' && days.has(day)));
+      if (x.reason === 'Daily') days.add(day);
+      if (ok && keep.length < 60) keep.push(x.id);
+    });
+    for (const x of all) if (!keep.includes(x.id)) await RP.del(x.id);
+    return p;
+  })();
+  try { return await rpBusy; } catch (e) { console.error(e); return null; } finally { rpBusy = null; }
+}
+// one a day, checked when the app opens and every hour while it stays open
+async function dailyPoint() {
+  try {
+    const list = await RP.list();
+    const today = new Date().toDateString();
+    if (list.some(p => new Date(p.id).toDateString() === today)) return;
+    await restorePoint('Daily');
+  } catch (e) { /* storage unavailable */ }
+}
+function scheduleDaily() {
+  const start = () => { if (allReady()) { setTimeout(dailyPoint, 4000); setInterval(dailyPoint, 3600e3); } else setTimeout(start, 1000); };
+  start();
+}
+
+// ---------------------------------------------------------------- one window at a time
+// Every window keeps its own copy of the data and saves it whole, so two open windows (two tabs, or the installed app
+// and a tab) would quietly overwrite each other. The newest window wins; older ones pause and offer to take over.
+const WIN = Math.random().toString(36).slice(2) + Date.now().toString(36);
+const chan = typeof BroadcastChannel === 'function' ? new BroadcastChannel('mfp-window') : null;
+function announce() {
+  const msg = { t: 'hello', id: WIN, at: Date.now() };
+  if (chan) chan.postMessage(msg);
+  try { localStorage.setItem('mfp:window', JSON.stringify(msg)); } catch (e) { /* storage blocked */ }
+}
+function onWindowMsg(msg) { if (msg && msg.t === 'hello' && msg.id !== WIN) pause(); }
+function pause() {
+  if (window.__mfpInactive) return;
+  window.__mfpInactive = true;
+  const app = $('.app'); if (app) app.inert = true;
+  $$('dialog[open]').forEach(d => { try { d.close(); } catch (e) { /* ignore */ } });
+  const el = document.createElement('div');
+  el.id = 'winGuard'; el.className = 'win-guard'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'wgTitle');
+  el.innerHTML = `<div class="win-card"><h2 id="wgTitle">Open in another window</h2>
+    <p>The planner was opened in another tab or window. This one has paused so the two don't overwrite each other's changes.</p>
+    <div class="row-actions"><button class="btn primary" id="wgUse">Use it here instead</button></div>
+    <p class="small muted" style="margin:12px 0 0">Using it here reloads this window with the latest data and pauses the other one.</p></div>`;
+  document.body.appendChild(el);
+  $('#wgUse').onclick = () => { announce(); location.reload(); };
+  $('#wgUse').focus();
+}
+if (chan) chan.onmessage = e => onWindowMsg(e.data);
+window.addEventListener('storage', e => { if (e.key === 'mfp:window' && e.newValue && !chan) { try { onWindowMsg(JSON.parse(e.newValue)); } catch (x) { /* ignore */ } } });
+announce();
 
 // ---------------------------------------------------------------- events
 function bind() {
@@ -8240,7 +9231,8 @@ function bind() {
   // keep the footer current
   setInterval(foot, 4000);
 }
-window.Shell = { setMode, get mode() { return mode; }, toast, foot, backup, restorePick, restoreFile, classify };
+window.Shell = { setMode, get mode() { return mode; }, toast, foot, backup, restorePick, restoreFile, classify, restorePoint, restorePoints: () => RP.list() };
+scheduleDaily();
 bind();
 setMode(mode);
 document.addEventListener('tally:ready', () => { foot(); if (mode === 'inc') window.__tally.render(); });
@@ -8397,7 +9389,7 @@ let quietUntil = 0; // saves caused by applying the other device's copy aren't "
 
 // ---------------------------------------------------------------- one sync
 async function syncNow({ first = false } = {}) {
-  if (!meta.on) return;
+  if (!meta.on || window.__mfpInactive) return; // paused: the app is open in another window
   if (busy) { again = true; return; }
   if (!allReady()) { again = true; return; }
   if (!tokenOk()) { setStatus('tap'); return; }
@@ -8451,6 +9443,9 @@ async function run(first) {
     hist = SC.mergeHistory(first ? [] : meta.histBase, local.investments.history, parts.investments.data.history);
   }
 
+  // about to replace what's here with another device's copy: keep a restore point first (at most hourly for routine updates)
+  const pulling = SC.PARTS.filter(p => plan[p] === 'pull');
+  if (pulling.length && window.Shell && window.Shell.restorePoint) await window.Shell.restorePoint('Before sync brought in changes', { minGap: pulling.some(p => chosen[p]) || first ? 0 : 3600e3 }).catch(() => {});
   const now = Date.now(), out = {};
   let upload = !file || remoteLocked !== !!meta.pass;
   for (const p of APPLY_ORDER) {
@@ -8789,7 +9784,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
   }
   function goMode(m) { if (window.Shell && window.Shell.setMode) window.Shell.setMode(m); }
   document.addEventListener('keydown', e => {
-    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || window.__mfpInactive) return;
     if (isTyping(document.activeElement) || $('dialog[open]')) return;
     if (e.key === '[') { e.preventDefault(); setSide(!root.classList.contains('side-collapsed')); }
     else if (e.key === '?') { e.preventDefault(); showHelp(); }
