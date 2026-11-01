@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261031190724 -->
+<!-- Master Financial Planner, hosted build 20261031203721 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1106,6 +1106,14 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 .ctlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; max-height: 50vh; overflow-y: auto; padding-right: 4px; }
 .ctlist label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
 .ctlist input { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Everything: delete balances by month; margin account in two parts (workbook import) */
+.h-delrange { align-items: end; }
+.h-delrange select { min-width: 140px; }
+.h-delsum { margin: 12px 0; font-size: 13.5px; }
+.h-pair-ex { font-variant-numeric: tabular-nums; }
+.h-pair select { max-width: 100%; }
+@media (max-width: 560px) { .h-delrange select { min-width: 0; width: 100%; } }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -3935,9 +3943,38 @@ H.matchAccount = (st, col) => {
   const n = normName(col.name);
   return st.accounts.find(a => a.wb && a.wb === col.key) || st.accounts.find(a => normName(a.name) === n) || st.accounts.find(a => normName(a.name).replace(/ j$| c$| jc$/, '') === n.replace(/ j$| c$| jc$/, '')) || null;
 };
-// mapping[c] = { target: accountId | 'new' | 'skip', cat, ccy, owner, name }
-H.applyMainImport = (st, parsed, mapping, { overwrite = false, file = 'workbook' } = {}) => {
-  let values = 0, created = 0;
+// A margin account kept as two columns, its CAD part and its USD part (say "Non-Registered CAD (Broker CAD only Margin)" and
+// "Broker USD Only Margin"). The app keeps it as one account, so the two are imported together as one C$ balance.
+const MARGIN_STOP = new Set(['cad', 'usd', 'only', 'margin', 'non', 'registered', 'nonregistered', 'account', 'acct', 'j', 'c', 'jc', 'part', 'portion', 'investments', 'the']);
+const marginWords = name => new Set(String(name).toLowerCase().replace(/[^a-z0-9]+/g, ' ').split(' ').filter(w => w.length > 1 && !MARGIN_STOP.has(w)));
+H.marginPairs = parsed => {
+  const m = (parsed.cols || []).filter(c => !c.skip && /margin/i.test(c.header));
+  const cad = m.filter(c => c.ccy === 'CAD'), usd = m.filter(c => c.ccy === 'USD');
+  const pairs = [], used = new Set();
+  for (const a of cad) {
+    const wa = marginWords(a.header);
+    let best = null, bn = 0;
+    for (const b of usd) {
+      if (used.has(b.c)) continue;
+      const n = [...marginWords(b.header)].filter(w => wa.has(w)).length;
+      if (n > bn) { bn = n; best = b; }
+    }
+    if (!best && cad.length === 1 && usd.length === 1) best = usd[0]; // one of each: the same account
+    if (!best) continue;
+    used.add(best.c);
+    const inst = [...wa].find(w => marginWords(best.header).has(w));
+    const nice = inst ? inst.charAt(0).toUpperCase() + inst.slice(1) : '';
+    pairs.push({ cad: a, usd: best, name: `${nice ? nice + ' margin' : 'Margin account'}${a.owner === 'J' || a.owner === 'C' ? ` (${a.owner})` : ''}` });
+  }
+  return pairs;
+};
+// mapping[c] = { target: accountId | 'new' | 'skip', cat, ccy, owner, name, group }
+// Columns sent to the same account are added together each month (each converted to the account's currency at that
+// month's rate), so a margin account's CAD and USD parts become one balance. Columns with target 'new' and the same
+// group share one new account. opts.retire: accounts that held one part separately before; their imported balances
+// are replaced by the combined one (cleared), and the account is archived (or removed, if it never had a balance).
+H.applyMainImport = (st, parsed, mapping, { overwrite = false, file = 'workbook', retire = [] } = {}) => {
+  let values = 0, created = 0, retired = 0;
   const touched = new Set();
   const fxAt = (ym, ccy) => {
     if (ccy === 'CAD') return 1;
@@ -3946,22 +3983,47 @@ H.applyMainImport = (st, parsed, mapping, { overwrite = false, file = 'workbook'
     if (!v) return null;
     return ccy === 'KRW' ? (src ? 1 / src : v) : v;
   };
+  const targets = new Map(), groups = {};
   for (const col of parsed.cols) {
     const mp = mapping[col.c];
     if (!mp || mp.target === 'skip') continue;
     let acc;
     if (mp.target === 'new') {
-      acc = { id: H.uid('a'), name: mp.name || col.name, inst: col.group || '', cat: mp.cat || col.cat, ccy: mp.ccy || col.ccy, owner: mp.owner || col.owner, archived: false, links: [], rate: null, payment: null, home: null, source: 'import' };
-      st.accounts.push(acc); created++;
+      if (mp.group && groups[mp.group]) acc = groups[mp.group];
+      else {
+        acc = { id: H.uid('a'), name: mp.name || col.name, inst: col.group || '', cat: mp.cat || col.cat, ccy: mp.accCcy || mp.ccy || col.ccy, owner: mp.owner || col.owner, archived: false, links: [], rate: null, payment: null, home: null, source: 'import' };
+        st.accounts.push(acc); created++;
+        if (mp.group) groups[mp.group] = acc;
+      }
     } else acc = st.accounts.find(a => a.id === mp.target);
     if (!acc) continue;
+    if (!targets.has(acc.id)) targets.set(acc.id, { acc, cols: [] });
+    targets.get(acc.id).cols.push({ col, ccy: mp.ccy || col.ccy });
+  }
+  // a part that used to live in its own account: take its imported balances out first, so nothing counts twice
+  for (const id of retire) {
+    const a = st.accounts.find(x => x.id === id);
+    if (!a || targets.has(id)) continue;
+    let left = 0;
+    for (const m of Object.values(st.balances)) { const e = m[id]; if (e === undefined) continue; if (e && typeof e === 'object' && e.s === 'i') delete m[id]; else left++; }
+    if (!left && a.source === 'template' && !(a.links && a.links.length) && !Object.values(st.balances).some(m => m[id] !== undefined)) { st.accounts = st.accounts.filter(x => x.id !== id); }
+    else if (!left) a.archived = true;
+    retired++;
+  }
+  for (const { acc, cols } of targets.values()) {
     const linked = acc.links && acc.links.length;
-    const colCcy = mp.ccy || col.ccy;
-    for (const [ym, raw] of Object.entries(col.values)) {
-      let v = raw;
+    const months = new Set(); cols.forEach(x => Object.keys(x.col.values).forEach(m => months.add(m)));
+    for (const ym of months) {
+      let v = 0, any = false, bad = false;
+      for (const { col, ccy } of cols) {
+        const raw = col.values[ym]; if (raw === undefined) continue;
+        let x = raw;
+        if (linked && ccy !== 'CAD') { const f = fxAt(ym, ccy); if (f === null) { bad = true; continue; } x *= f; }
+        else if (!linked && ccy !== acc.ccy) { const f1 = fxAt(ym, ccy), f2 = fxAt(ym, acc.ccy); if (f1 === null || f2 === null) { bad = true; continue; } x = x * f1 / f2; }
+        v += x; any = true;
+      }
+      if (!any || bad) continue; // a part without a rate that month: skip the month rather than import half of it
       if (H.isLiab(acc)) v = Math.abs(v);
-      if (linked && colCcy !== 'CAD') { const f = fxAt(ym, colCcy); if (f === null) continue; v = v * f; }
-      else if (!linked && colCcy !== acc.ccy) { const f1 = fxAt(ym, colCcy), f2 = fxAt(ym, acc.ccy); if (f1 === null || f2 === null) continue; v = v * f1 / f2; }
       const m = st.balances[ym] = st.balances[ym] || {};
       const ex = m[acc.id];
       if (ex && (typeof ex === 'number' || ex.s === 'e') && !overwrite) continue;
@@ -3973,7 +4035,22 @@ H.applyMainImport = (st, parsed, mapping, { overwrite = false, file = 'workbook'
   for (const [ym, n] of Object.entries(parsed.notes)) if (!st.notes[ym]) st.notes[ym] = n;
   const months = [...touched].sort();
   st.imports.push({ id: H.uid('i'), file, at: Date.now(), values, created, from: months[0] || null, to: months[months.length - 1] || null });
-  return { values, created, months };
+  return { values, created, retired, months };
+};
+// month-end balances in a range of months, for deleting: kind 'all' | 'entered' (typed in the app) | 'imported'
+H.selectBalances = (st, { from, to, acc = 'all', kind = 'all' }) => {
+  const [lo, hi] = from <= to ? [from, to] : [to, from], out = [];
+  for (const [ym, m] of Object.entries(st.balances || {})) {
+    if (ym < lo || ym > hi || !m) continue;
+    for (const [id, e] of Object.entries(m)) {
+      if (acc !== 'all' && id !== acc) continue;
+      const src = e && typeof e === 'object' ? e.s : 'e';
+      if (kind === 'imported' && src !== 'i') continue;
+      if (kind === 'entered' && src === 'i') continue;
+      out.push({ ym, id, e, src });
+    }
+  }
+  return out;
 };
 // income statement -> monthly total rows for the Income & spending mode
 H.incomeRows = (parsed, catMap, { before = null } = {}) => {
@@ -8346,7 +8423,71 @@ function viewHistory() {
       <button class="btn sm" data-hcsv="1">Download CSV</button></header>
       <div class="h-wrap h-hist-wrap"><table class="h-hist tk-off" aria-label="Month-end balance of every account"><thead><tr><th>${ui.hNative ? 'Account' : `Account <span class="h-faint">(${esc(unit)})</span>`}</th>${months.map(m => `<th class="n"><button class="h-hist-m" data-hmonth-bal="${m}" title="Update balances for ${esc(mlong(m))}">${esc(mlabel(m))}</button></th>`).join('')}</tr></thead>
       <tbody>${body}</tbody></table></div>
-      <p class="h-note">Liabilities show as negative so each month adds up to your net worth.${ui.hNative ? ' Subtotals and totals are in C$.' : ` USD and other currencies are converted at each month's rate.`} Greyed numbers are carried forward from an earlier month because nothing was entered. Click a name to chart it, or a month to update its balances.${H.hidden ? ` ${H.hidden} account${H.hidden === 1 ? '' : 's'} with no balance in these months ${H.hidden === 1 ? 'is' : 'are'} left out.` : ''}</p></div>`;
+      <p class="h-note">Liabilities show as negative so each month adds up to your net worth.${ui.hNative ? ' Subtotals and totals are in C$.' : ` USD and other currencies are converted at each month's rate.`} Greyed numbers are carried forward from an earlier month because nothing was entered. Click a name to chart it, or a month to update its balances.${H.hidden ? ` ${H.hidden} account${H.hidden === 1 ? '' : 's'} with no balance in these months ${H.hidden === 1 ? 'is' : 'are'} left out.` : ''}</p></div>
+    ${balDelPanel()}`;
+}
+// ---- delete balances for a range of months (one account or all; typed, imported or both)
+function balDelState() {
+  const months = Object.keys(st.balances).filter(m => st.balances[m] && Object.keys(st.balances[m]).length).sort();
+  const d = ui.dRange || (ui.dRange = { from: '', to: '', acc: 'all', kind: 'all', extras: false });
+  if (!months.includes(d.from)) d.from = months[months.length - 1] || '';
+  if (!months.includes(d.to)) d.to = months[months.length - 1] || '';
+  if (d.acc !== 'all' && !st.accounts.some(a => a.id === d.acc)) d.acc = 'all';
+  const [lo, hi] = d.from <= d.to ? [d.from, d.to] : [d.to, d.from];
+  const list = d.from ? HC.selectBalances(st, d) : [];
+  const contrib = [];
+  if (d.from && d.kind !== 'imported') for (const [ym, m] of Object.entries(st.contrib || {})) { if (ym < lo || ym > hi) continue; for (const id of Object.keys(m || {})) if (d.acc === 'all' || d.acc === id) contrib.push({ ym, id, v: m[id] }); }
+  const extras = d.extras && d.acc === 'all' && d.kind === 'all';
+  return { months, d, lo, hi, list, contrib, extras };
+}
+function balDelSummary(r) {
+  const span = r.lo === r.hi ? mlabel(r.lo) : `${mlabel(r.lo)} to ${mlabel(r.hi)}`;
+  const who = r.d.acc === 'all' ? 'all accounts' : (st.accounts.find(a => a.id === r.d.acc) || {}).name;
+  if (!r.list.length && !r.contrib.length) return { span, who, html: `No ${{ all: '', entered: 'typed ', imported: 'imported ' }[r.d.kind]}balances for ${esc(who)} in ${esc(span)}.` };
+  const typed = r.list.filter(x => x.src !== 'i').length, imp = r.list.length - typed;
+  const nm = new Set(r.list.map(x => x.ym)).size, na = new Set(r.list.map(x => x.id)).size;
+  const bits = [typed ? `${nf0.format(typed)} typed` : '', imp ? `${nf0.format(imp)} from your workbook` : ''].filter(Boolean).join(', ');
+  return { span, who, nm, html: `<b>${nf0.format(r.list.length)} balance${r.list.length === 1 ? '' : 's'}</b>${bits ? ` (${bits})` : ''} in ${nf0.format(nm)} month${nm === 1 ? '' : 's'}${r.d.acc === 'all' ? `, ${nf0.format(na)} account${na === 1 ? '' : 's'}` : ` of ${esc(who)}`}, ${esc(span)}.${r.contrib.length ? ` Also ${nf0.format(r.contrib.length)} contribution${r.contrib.length === 1 ? '' : 's'} (Returns).` : ''}` };
+}
+function balDelPanel() {
+  const r = balDelState();
+  if (!r.months.length) return '';
+  const sum = balDelSummary(r);
+  const mopts = sel => r.months.map(m => `<option value="${m}"${m === sel ? ' selected' : ''}>${esc(mlabel(m))}</option>`).join('');
+  const withBal = new Set(); Object.values(st.balances).forEach(m => Object.keys(m || {}).forEach(id => withBal.add(id)));
+  const accs = st.accounts.filter(a => withBal.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
+  const n = r.list.length + r.contrib.length;
+  return `<div class="h-panel" id="balDel" style="margin-top:20px"><header><h2>Delete balances by month</h2><span class="h-faint small">For clearing out a stretch of months, for example to import them again.</span></header>
+    <div class="h-fields h-delrange">
+      <label>From<select id="hdFrom" data-hdel="from">${mopts(r.d.from)}</select></label>
+      <label>To<select id="hdTo" data-hdel="to">${mopts(r.d.to)}</select></label>
+      <label>Account<select id="hdAcc" data-hdel="acc"><option value="all">All accounts</option>${accs.map(a => `<option value="${esc(a.id)}"${a.id === r.d.acc ? ' selected' : ''}>${esc(a.name)}</option>`).join('')}</select></label>
+      <label>Which<select id="hdKind" data-hdel="kind">${[['all', 'Typed and imported'], ['imported', 'Imported from the workbook only'], ['entered', 'Typed in the app only']].map(([v, l]) => `<option value="${v}"${v === r.d.kind ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+    </div>
+    ${r.d.acc === 'all' && r.d.kind === 'all' ? `<label class="h-check" style="margin-top:10px"><input type="checkbox" id="hdExtras" data-hdel="extras" ${r.d.extras ? 'checked' : ''}> Also those months' exchange rates and notes</label>` : ''}
+    <p class="h-delsum" id="hdSum">${sum.html}</p>
+    <button class="btn danger" data-hdelgo="1" ${n ? '' : 'disabled'}>${n ? `Delete ${nf0.format(r.list.length || r.contrib.length)} ${r.list.length ? `balance${r.list.length === 1 ? '' : 's'}` : `contribution${r.contrib.length === 1 ? '' : 's'}`}…` : 'Delete'}</button>
+    <p class="h-note">Values that come from the Investments mode aren't stored here (delete those snapshots in Investments &gt; History). A month left without a balance shows the last earlier one carried forward, greyed, as usual. You can undo right after, and a restore point is saved first.</p></div>`;
+}
+async function balDelGo() {
+  const r = balDelState(), sum = balDelSummary(r);
+  if (!r.list.length && !r.contrib.length) return;
+  const body = `<p>${sum.html}</p><p>They're removed from Everything, which changes your net worth history for those months.${r.extras ? ' The exchange rates and notes for those months go too.' : ''}</p>` + (window.MfpSync && window.MfpSync.on ? '<p><b>Sync is on:</b> they are deleted on your other devices too the next time those sync.</p>' : '');
+  const ok = T() && T().modal ? await T().modal({ title: `Delete balances, ${sum.span}?`, body, actions: [{ label: 'Cancel', value: false }, { label: 'Delete', kind: 'danger solid', value: true }] }) : window.confirm('Delete these balances?');
+  if (!ok) return;
+  if (window.Shell && window.Shell.restorePoint) await window.Shell.restorePoint('Before deleting balances').catch(() => {});
+  const gone = r.list.map(x => ({ ym: x.ym, id: x.id, e: x.e })), goneC = r.contrib.slice(), fx = {}, notes = {};
+  for (const x of gone) { const m = st.balances[x.ym]; if (m) { delete m[x.id]; if (!Object.keys(m).length) delete st.balances[x.ym]; } }
+  for (const x of goneC) { const m = st.contrib[x.ym]; if (m) { delete m[x.id]; if (!Object.keys(m).length) delete st.contrib[x.ym]; } }
+  if (r.extras) for (const ym of Object.keys(st.fx)) if (ym >= r.lo && ym <= r.hi) { fx[ym] = st.fx[ym]; delete st.fx[ym]; }
+  if (r.extras) for (const ym of Object.keys(st.notes)) if (ym >= r.lo && ym <= r.hi) { notes[ym] = st.notes[ym]; delete st.notes[ym]; }
+  save(); render();
+  toast(`Deleted ${nf0.format(gone.length)} balance${gone.length === 1 ? '' : 's'} (${sum.span}).`, { action: { label: 'Undo', fn: () => {
+    for (const x of gone) (st.balances[x.ym] = st.balances[x.ym] || {})[x.id] = x.e;
+    for (const x of goneC) (st.contrib[x.ym] = st.contrib[x.ym] || {})[x.id] = x.v;
+    Object.assign(st.fx, fx); Object.assign(st.notes, notes);
+    save(); render(); toast('Balances restored.');
+  } } });
 }
 function historyCsv() {
   const H = historyModel(), { months } = H;
@@ -8677,12 +8818,27 @@ function viewImport() {
   const accOpts = sel => `<option value="skip" ${sel === 'skip' ? 'selected' : ''}>Skip</option><option value="new" ${sel === 'new' ? 'selected' : ''}>New account</option>` +
     HC.GROUPS.map(([g, label]) => { const list = st.accounts.filter(a => (HC.CATS[a.cat] || HC.CATS.otherA).group === g); return list.length ? `<optgroup label="${esc(label)}">${list.map(a => `<option value="${esc(a.id)}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</optgroup>` : ''; }).join('');
   if (P && !P.error) {
-    h += `<div class="h-panel" style="margin-bottom:20px"><header><h2>Balances: ${esc(mlabel(P.months[0] || ''))} to ${esc(mlabel(P.months[P.months.length - 1] || ''))}</h2><span class="spacer"></span><span class="h-faint small">${P.months.length} months, ${P.cols.filter(c => !c.skip).length} columns</span></header>
+    const pairOf = c => (imp.pairs || []).find(x => x.on && (x.cad === c || x.usd === c));
+    const accName = id => (id === 'new' ? null : (st.accounts.find(a => a.id === id) || {}).name);
+    const pairBox = (imp.pairs || []).map(pr => {
+      const cc = P.cols.find(x => x.c === pr.cad), uc = P.cols.find(x => x.c === pr.usd);
+      const lastM = Object.keys(uc.values).filter(m => cc.values[m] !== undefined).sort().pop(); // the latest month with both parts
+      const fx = P.fx[lastM] && P.fx[lastM].USD, cv = cc.values[lastM] || 0, uv = uc.values[lastM];
+      const tgt = st.accounts.find(a => a.id === pr.target);
+      const others = pr.parts.filter(id => id !== pr.target).map(id => st.accounts.find(a => a.id === id)).filter(Boolean);
+      const accOptsNoSkip = accOpts(pr.target).replace(/<option value="skip"[^>]*>Skip<\/option>/, '').replace('>New account<', `>New account: ${esc(pr.name)}<`);
+      return `<div class="h-callout h-pair"><div><b>Margin account in two parts.</b> Your workbook keeps <b>${esc(cc.header)}</b> (CAD) and <b>${esc(uc.header)}</b> (USD) as separate columns. The app keeps a margin account as one account, so ${pr.on ? 'they are' : 'they can be'} imported together as one balance in C$: the CAD part plus the USD part at that month's USDCAD rate from the workbook.
+        ${lastM && uv !== undefined && fx ? `<p class="h-pair-ex" data-ym="${lastM}">For example ${esc(mlabel(lastM))}: C$${nf0.format(Math.round(cv))} + US$${nf0.format(Math.round(uv))} × ${fx.toFixed(4)} = <b>C$${nf0.format(Math.round(cv + uv * fx))}</b></p>` : ''}
+        <label class="h-check"><input type="checkbox" data-hpair="${pr.i}" ${pr.on ? 'checked' : ''}> Combine them into</label> <select data-hpairto="${pr.i}" aria-label="Account for the combined margin balance" ${pr.on ? '' : 'disabled'}>${accOptsNoSkip}</select>
+        ${pr.on && tgt && !(tgt.links && tgt.links.length) && tgt.ccy !== 'CAD' ? `<p class="h-note" style="margin:6px 0 0">${esc(tgt.name)} is a ${esc(tgt.ccy)} account, so the combined balance is kept in ${esc(tgt.ccy)}. Pick a C$ account (or a new one) for a C$ balance.</p>` : ''}
+        ${pr.on && others.length ? `<p class="h-note" style="margin:6px 0 0">${others.map(a => esc(a.name)).join(' and ')}, which held ${others.length === 1 ? 'a part' : 'parts'} separately, ${others.length === 1 ? 'has its' : 'have their'} imported balances replaced by the combined one and ${others.length === 1 ? 'is' : 'are'} archived, so nothing counts twice. Balances you typed there stay.</p>` : ''}</div></div>`;
+    }).join('');
+    h += `<div class="h-panel" style="margin-bottom:20px"><header><h2>Balances: ${esc(mlabel(P.months[0] || ''))} to ${esc(mlabel(P.months[P.months.length - 1] || ''))}</h2><span class="spacer"></span><span class="h-faint small">${P.months.length} months, ${P.cols.filter(c => !c.skip).length} columns</span></header>${pairBox}
       <div class="h-wrap"><table class="h-table"><thead><tr><th>Workbook column</th><th>Currency</th><th class="n">Months</th><th class="n">Latest value</th><th>Goes to</th><th>Category (new)</th></tr></thead><tbody>
       ${P.cols.map(c => { const mp = imp.map[c.c]; const lastM = Object.keys(c.values).sort().pop();
         return `<tr${mp.target === 'skip' ? ' class="h-faint"' : ''}><td>${esc(c.header)}${c.group ? `<span class="h-sub">${esc(c.group)}</span>` : ''}${c.derived ? '<span class="h-sub">a formula (total), skipped</span>' : ''}</td><td>${esc(c.ccy)}</td><td class="n">${c.n}</td><td class="n">${lastM ? `${nf0.format(Math.round(c.values[lastM]))}<span class="h-sub">${esc(mlabel(lastM))}</span>` : ''}</td>
-          <td><select data-hmap="${c.c}" aria-label="Destination for ${esc(c.header)}">${accOpts(mp.target)}</select></td>
-          <td>${mp.target === 'new' ? `<select data-hmapcat="${c.c}">${Object.entries(HC.CATS).map(([k, x]) => `<option value="${k}" ${k === (mp.cat || c.cat) ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select>` : ''}</td></tr>`; }).join('')}
+          <td>${pairOf(c.c) ? `<span class="h-badge auto" title="Combined with the other part of the margin account">Combined into ${esc(accName(pairOf(c.c).target) || pairOf(c.c).name + ' (new)')}</span>` : `<select data-hmap="${c.c}" aria-label="Destination for ${esc(c.header)}">${accOpts(mp.target)}</select>`}</td>
+          <td>${mp.target === 'new' && !pairOf(c.c) ? `<select data-hmapcat="${c.c}">${Object.entries(HC.CATS).map(([k, x]) => `<option value="${k}" ${k === (mp.cat || c.cat) ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select>` : ''}</td></tr>`; }).join('')}
       </tbody></table></div>
       <label class="h-check" style="margin-top:10px"><input type="checkbox" data-hopt="overwrite" ${imp.overwrite ? 'checked' : ''}> Replace values I've typed in the app</label></div>`;
   } else if (P && P.error) h += `<div class="h-callout">Balances: ${esc(P.error)}</div>`;
@@ -8714,7 +8870,15 @@ async function readWorkbook(file) {
     if (mainName) { const { cells, merges } = HC.cellsFromSheet(wb.Sheets[mainName], XLSX); imp.main = HC.parseMainPage(cells, merges); }
     if (incName) imp.inc = HC.parseIncomeSheet(HC.cellsFromSheet(wb.Sheets[incName], XLSX).cells);
     if (!imp.main && !imp.inc) { ui.imp = { error: `No "Main Page" or "Income Statement" sheet in ${file.name}.` }; render(); return; }
-    if (imp.main && !imp.main.error) for (const c of imp.main.cols) { const a = c.skip ? null : HC.matchAccount(st, c); imp.map[c.c] = { target: c.skip ? 'skip' : a ? a.id : 'new', cat: c.cat }; }
+    if (imp.main && !imp.main.error) {
+      for (const c of imp.main.cols) { const a = c.skip ? null : HC.matchAccount(st, c); imp.map[c.c] = { target: c.skip ? 'skip' : a ? a.id : 'new', cat: c.cat }; }
+      // a margin account split into a CAD and a USD column goes into one account, as one C$ balance
+      imp.pairs = HC.marginPairs(imp.main).map((pr, i) => {
+        const ca = HC.matchAccount(st, pr.cad), ua = HC.matchAccount(st, pr.usd);
+        const target = ca ? ca.id : ua && ua.ccy === 'CAD' ? ua.id : 'new';
+        return { i, cad: pr.cad.c, usd: pr.usd.c, on: true, target, name: pr.name, owner: pr.cad.owner, parts: [ca && ca.id, ua && ua.id].filter(Boolean) };
+      });
+    }
     if (imp.inc && !imp.inc.error) {
       const cats = T() ? T().categories() : [];
       for (const k of imp.inc.cats) { const ex = cats.find(c => c.type === k.kind && c.name.toLowerCase() === k.name.toLowerCase()); imp.catMap[k.c] = ex ? ex.id : 'new'; }
@@ -8728,8 +8892,16 @@ function runImport() {
   if (imp.main && !imp.main.error) {
     const mapping = {};
     for (const c of imp.main.cols) { const mp = imp.map[c.c]; mapping[c.c] = Object.assign({}, mp, mp.target === 'new' ? { cat: mp.cat || c.cat, ccy: c.ccy, name: c.name, owner: c.owner } : {}); }
-    const res = HC.applyMainImport(st, imp.main, mapping, { overwrite: imp.overwrite, file: imp.file });
+    const retire = [];
+    for (const pr of (imp.pairs || []).filter(x => x.on)) {
+      const m = pr.target === 'new' ? { target: 'new', group: 'pair' + pr.i, name: pr.name, ccy: 'CAD', cat: 'invest', owner: pr.owner } : { target: pr.target };
+      for (const c of [pr.cad, pr.usd]) mapping[c] = Object.assign({}, m, { ccy: imp.main.cols.find(x => x.c === c).ccy, accCcy: m.ccy });
+      if (pr.target === 'new') { mapping[pr.cad].ccy = 'CAD'; mapping[pr.usd].ccy = 'USD'; }
+      pr.parts.filter(id => id !== pr.target).forEach(id => retire.push(id));
+    }
+    const res = HC.applyMainImport(st, imp.main, mapping, { overwrite: imp.overwrite, file: imp.file, retire });
     msgs.push(`${nf0.format(res.values)} balances for ${res.months.length} months`);
+    if ((imp.pairs || []).some(x => x.on)) msgs.push(`the margin account's CAD and USD parts combined into one C$ balance`);
   }
   if (imp.inc && !imp.inc.error && T()) {
     const t = T(), catMap = {};
@@ -8777,6 +8949,7 @@ function bind() {
     const hsh = t.closest('[data-hshut]'); if (hsh) { ui.hShut[hsh.dataset.hshut] = !ui.hShut[hsh.dataset.hshut]; render(); return; }
     const hmb = t.closest('[data-hmonth-bal]'); if (hmb) { ui.month = hmb.dataset.hmonthBal; go('balances'); return; }
     if (t.closest('[data-hcsv]')) { historyCsv(); return; }
+    if (t.closest('[data-hdelgo]')) { balDelGo(); return; }
     const rr = t.closest('[data-hrr]'); if (rr) { ui.rRange = rr.dataset.hrr; render(); return; }
     const ce = t.closest('[data-hcontrib-edit]'); if (ce) { contribDialog(ce.dataset.hcontribEdit); return; }
     const rs = t.closest('[data-hrsel]'); if (rs) { ui.rSel = rs.dataset.hrsel; render(); const p = $('#allView .h-panel'); if (p && p.getBoundingClientRect().top < 0) p.scrollIntoView({ block: 'start' }); return; }
@@ -8868,6 +9041,9 @@ function bind() {
       save(); setTimeout(render, 0); return;
     }
     if (t.dataset.hmap) { ui.imp.map[t.dataset.hmap].target = t.value; render(); return; }
+    if (t.dataset.hdel) { const k = t.dataset.hdel; ui.dRange[k] = k === 'extras' ? t.checked : t.value; render(); return; }
+    if (t.dataset.hpair !== undefined) { const pr = ui.imp.pairs[+t.dataset.hpair]; pr.on = t.checked; render(); return; }
+    if (t.dataset.hpairto !== undefined) { const pr = ui.imp.pairs[+t.dataset.hpairto]; pr.target = t.value; render(); return; }
     if (t.dataset.hmapcat) { ui.imp.map[t.dataset.hmapcat].cat = t.value; return; }
     if (t.dataset.hcat) { ui.imp.catMap[t.dataset.hcat] = t.value; render(); return; }
     if (t.dataset.hopt) { ui.imp[t.dataset.hopt] = t.checked; return; }
