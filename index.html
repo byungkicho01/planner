@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261101132843 -->
+<!-- Master Financial Planner, hosted build 20261101150339 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -479,7 +479,7 @@ details.more summary { cursor: pointer; color: var(--ink-2); font-size: 13px; ma
 .df { position: relative; display: inline-flex; align-items: stretch; gap: 4px; vertical-align: middle; }
 .df input.df-text { width: 8.4em; text-align: left; font-variant-numeric: tabular-nums; }
 .inv .acct td .df input.df-text { width: 8.4em; text-align: left; }
-.df .df-cal { display: inline-grid; place-items: center; width: 30px; min-height: 30px; padding: 0; border: 1px solid var(--rule-strong); border-radius: var(--radius-s, 6px); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.df .df-cal { display: inline-grid; place-items: center; flex: none; width: 30px; min-height: 30px; padding: 0; border: 1px solid var(--rule-strong); border-radius: var(--radius-s, 6px); background: var(--surface); color: var(--ink-2); cursor: pointer; }
 .df .df-cal:hover { color: var(--ink); border-color: var(--ink-3); }
 .df .df-pick { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 .df input.df-text.df-bad { border-color: var(--out); box-shadow: 0 0 0 2px color-mix(in srgb, var(--out) 25%, transparent); }
@@ -842,7 +842,7 @@ th.tk-rel { position: relative; }
   .inv .chipgroup::-webkit-scrollbar, .inv .subtabs::-webkit-scrollbar { display: none; }
   .inv .chipgroup > *, .inv .subtabs > * { flex: none; white-space: nowrap; }
   .toolbar input[type="search"] { width: 100%; }
-  .toolbar select { flex: 1 1 140px; min-width: 0; }
+  .toolbar select { flex: 1 1 150px; min-width: 0; } /* two side by side from 360px; stacked below that */
   .toolbar .count { margin-left: 0; width: 100%; }
   /* comfortable touch targets */
   .chip, .inv .chip { min-height: 36px; padding-left: 12px; padding-right: 12px; }
@@ -1076,6 +1076,7 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 .tr-head { margin: 0 0 12px; font-size: 14px; line-height: 1.6; max-width: 90ch; }
 .tr-head b.out, .trtbl td.out { color: var(--out); }
 .tr-head b.in, .trtbl td.in { color: var(--in); }
+.tr-head b { white-space: nowrap; } /* "−$15,140" never splits after the minus sign */
 .trtbl tr.click { cursor: pointer; }
 .trtbl tr.click:hover td { background: var(--surface-2); }
 .trtbl tr.sel td { background: var(--hl-soft); }
@@ -1120,6 +1121,19 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 .h-wbwhat .h-seg label.on:first-child, .h-wbwhat .h-seg label.on:last-child, .h-wbwhat .h-seg label.on { background: var(--btn-ink); color: var(--btn-ink-text); }
 @media (max-width: 640px) { .h-wbwhat .h-seg { display: grid; } .h-wbwhat .h-seg label + label { border-left: 0; border-top: 1px solid var(--rule-strong); } .h-wbwhat .h-seg label { min-height: 36px; } }
 
+/* phones: a tile's amount stays on one line and shrinks to fit its tile (C$1,587,249 used to split at 320px) */
+@media (max-width: 640px) {
+  .h-tile { container-type: inline-size; min-width: 0; }
+  .h-tile .value { white-space: nowrap; font-size: clamp(13px, 15cqi, 21px); }
+  .h-ratio .h-tile .value { font-size: clamp(13px, 14cqi, 21px); }
+}
+/* smallest phones (320px): long category names and dates get the room they need */
+@media (max-width: 380px) {
+  .h-side-panel .h-table tr[data-hacc] > td:has(> select[data-af="cat"]) { grid-column: 1 / -1; }
+  .inv .acct td .df input.df-text { padding-left: 5px; padding-right: 3px; font-size: 13px; letter-spacing: -.01em; }
+  .inv .acct td .df { gap: 3px; }
+  .tbl.txtbl select.catsel { padding-left: 7px; }
+}
 /* small phones (rigorous testing, Nov 1) */
 @media (max-width: 420px) {
   .splitrow { grid-template-columns: 1fr auto; }
@@ -1129,7 +1143,13 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 .bkform input[type=password] { min-height: 36px; }
 /* a wide table's pinned first column can't take most of a small screen, or it covers the columns scrolling under it */
 @media (max-width: 560px) {
-  .tk-wide > table.tk > thead > tr > :first-child, .tk-wide > table.tk > tbody > tr > :first-child { max-width: 42vw; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  /* ux.js sets --tk-c1: the column's one-line width, capped at 42vw. Longer labels wrap between words, never inside one
+     (overflow-wrap: anywhere let the column shrink to one letter, so labels stacked vertically) */
+  .tk-wide > table.tk > thead > tr > :first-child, .tk-wide > table.tk > tbody > tr > :first-child, .tk-wide > table.tk > tfoot > tr > :first-child { width: var(--tk-c1, auto); max-width: 42vw; white-space: normal; overflow-wrap: break-word; }
+  .tk-wide > table.tk.tk-c1m > * > tr > :first-child { white-space: nowrap; width: auto; max-width: none; }
+  /* a cell's width is only a preference when the table is tight; a zero-height spacer makes it a minimum (every engine) */
+  .tk-wide > table.tk > * > tr > :first-child:not([colspan])::after { content: ''; display: block; width: var(--tk-c1i, 0px); height: 0; }
+  .tk-wide > table.tk.tk-c1m > * > tr > :first-child::after { display: none; }
   table.h-table td:first-child .h-sub { white-space: normal; }
 }
 @media (max-width: 380px) {
@@ -1140,14 +1160,13 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 @media (max-width: 420px) { .h-check { white-space: normal; } }
 @media (max-width: 380px) {
   .h-tile { padding: 12px; min-width: 0; }
-  .h-tile .value { font-size: 18px; overflow-wrap: anywhere; }
   .h-tile .label { letter-spacing: .03em; }
   .section-head { flex-wrap: wrap; }
   .rank td { padding: 8px 6px; }
   .rank .barcell, .rank td.share, .rank tfoot td:last-child { display: none; }
   .rank { table-layout: fixed; }
   .rank td.amt { width: 84px; }
-  .rank td:first-child { overflow-wrap: anywhere; }
+  .rank td:first-child { overflow-wrap: break-word; }
   .rank .desc-sub, .rank .budget { white-space: normal; }
   .section-head .spacer { display: none; }
   .rv .act { flex-wrap: wrap; }
@@ -10407,6 +10426,21 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
       const fitsAcross = scrolls && !wrap.classList.contains('tk-wide');
       wrap.classList.toggle('tk-fit', fitsAcross && table.offsetHeight > window.innerHeight * 0.8 && !table.classList.contains('pivot'));
       wrap.classList.remove('tk-tall');
+      // phones: the pinned first column is as wide as its longest label on one line, up to 42% of the screen
+      if (wrap.classList.contains('tk-wide') && window.innerWidth <= 560) {
+        table.classList.add('tk-c1m');
+        let w = 0, pad = 0;
+        for (const r of table.rows) {
+          const c = r.cells[0]; if (!c || c.colSpan !== 1) continue;
+          const cs = getComputedStyle(c), p = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+          if (c.scrollWidth > w) { w = c.scrollWidth; pad = p; }
+        }
+        table.classList.remove('tk-c1m');
+        const outer = Math.ceil(Math.min(w + 1, window.innerWidth * 0.42));
+        const want = outer + 'px', inner = Math.max(0, outer - pad) + 'px';
+        if (table.style.getPropertyValue('--tk-c1') !== want) table.style.setProperty('--tk-c1', want);
+        if (table.style.getPropertyValue('--tk-c1i') !== inner) table.style.setProperty('--tk-c1i', inner);
+      } else if (table.style.getPropertyValue('--tk-c1')) { table.style.removeProperty('--tk-c1'); table.style.removeProperty('--tk-c1i'); }
     }
     // clamped text gets its full text as a tooltip
     for (const el of $$('.tk .hsub, .tk .h-sub, .tk.tk-fixed td')) {
