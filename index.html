@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261031212237 -->
+<!-- Master Financial Planner, hosted build 20261101091820 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -3613,11 +3613,22 @@ H.valueOf = (st, acc, ym, ctx) => {
   // A month imported from the workbook is a complete snapshot: an account missing from it was closed or zero then.
   const imported = m => { const b = st.balances[m]; if (!b) return false; for (const k in b) if (b[k] && b[k].s === 'i') return true; return false; };
   if (imported(ym)) return null;
-  // otherwise carry the last value forward (up to 24 months), so slow-moving things don't need re-entering
+  // otherwise carry the last value forward (up to 24 months), so slow-moving things don't need re-entering. An account
+  // valued by the Investments mode carries its latest valuation too: early in a new month (a weekend, a holiday) the
+  // valuation date is still in the month before, and the new month shouldn't drop those accounts from net worth.
+  const linkedAt = p => {
+    if (!(acc.links && acc.links.length && ctx)) return null;
+    const src = ctx.live && ctx.live.ym === p ? { acct: ctx.live.acct, date: ctx.live.date } : H.snapFor(ctx, p);
+    if (!src) return null;
+    const have = acc.links.filter(l => src.acct[l] !== undefined);
+    return have.length ? { v: have.reduce((t, l) => t + src.acct[l], 0), asOf: src.date } : null;
+  };
   for (let i = 1; i <= 24; i++) {
     const p = H.addMonths(ym, -i);
     const pe = explicit(st, p, acc.id);
     if (pe) return { v: pe.v, src: 'carried', from: p };
+    const lv = linkedAt(p);
+    if (lv) return { v: lv.v, src: 'carried', from: p, asOf: lv.asOf };
     if (imported(p)) return null;
   }
   return null;
@@ -8040,7 +8051,9 @@ function makeCtx() {
       snaps = (ex.state.history || []).filter(h => h.acct && h.kind !== 'estimate');
     } catch (e) { console.error(e); }
   }
-  return { live, snaps, R, fxAuto: ym => (ex && ex.fxOn ? ex.fxOn(HC.monthEnd(ym)) : null) };
+  // the Bank of Canada rate at month end; for the month we're in, the latest one so far (not an older stored month's)
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  return { live, snaps, R, fxAuto: ym => { if (!(ex && ex.fxOn)) return null; const e = HC.monthEnd(ym); return ex.fxOn(e > today ? today : e); } };
 }
 function flows() { try { return T() ? T().monthly() : new Map(); } catch (e) { return new Map(); } }
 
