@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261031203721 -->
+<!-- Master Financial Planner, hosted build 20261031212237 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1114,6 +1114,11 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 .h-pair-ex { font-variant-numeric: tabular-nums; }
 .h-pair select { max-width: 100%; }
 @media (max-width: 560px) { .h-delrange select { min-width: 0; width: 100%; } }
+/* workbook import: what to import */
+.h-wbwhat { justify-items: start; }
+@media (max-width: 640px) { .h-wbwhat { justify-items: stretch; } }
+.h-wbwhat .h-seg label.on:first-child, .h-wbwhat .h-seg label.on:last-child, .h-wbwhat .h-seg label.on { background: var(--btn-ink); color: var(--btn-ink-text); }
+@media (max-width: 640px) { .h-wbwhat .h-seg { display: grid; } .h-wbwhat .h-seg label + label { border-left: 0; border-top: 1px solid var(--rule-strong); } .h-wbwhat .h-seg label { min-height: 36px; } }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -7958,11 +7963,26 @@ start();
         S.categories.push(c); reindex(); return c;
       },
       // monthly totals from a workbook: one transaction per category per month, removable as one import
-      addMonthlyTotals(rows, { file = 'workbook', account = 'Workbook history' } = {}) {
+      addMonthlyTotals(rows, { file = 'workbook', account = 'Workbook history', replace = false } = {}) {
+        // importing the income statement again: its months replace the totals an earlier workbook import added for them
+        let replaced = 0;
+        if (replace) {
+          const wbImp = new Set(S.imports.filter(i => i.workbook).map(i => i.id)), months = new Set(rows.map(r => r.date.slice(0, 7)));
+          const keep = S.transactions.filter(t => !(t.importId && wbImp.has(t.importId) && months.has(t.date.slice(0, 7))));
+          replaced = S.transactions.length - keep.length; S.transactions = keep;
+          const left = new Set(S.transactions.map(t => t.importId).filter(Boolean));
+          S.imports = S.imports.filter(i => !i.workbook || left.has(i.id));
+        }
         const dates = rows.map(r => r.date).sort();
         const imp = { id: C.uid('i'), file, account, at: Date.now(), added: rows.length, dups: 0, skipped: 0, from: dates[0] || null, to: dates[dates.length - 1] || null, workbook: true };
         for (const r of rows) S.transactions.push({ id: C.uid('t'), date: r.date, desc: r.desc, amount: r.amount, account, importId: imp.id, key: r.key, cat: r.cat, src: 'manual', conf: 1 });
-        S.imports.push(imp); reindex(); scheduleSave(); return imp;
+        S.imports.push(imp); reindex(); scheduleSave(); return Object.assign({ replaced }, imp);
+      },
+      // monthly totals already brought in from a workbook
+      workbookTotals() {
+        const wbImp = new Set(S.imports.filter(i => i.workbook).map(i => i.id));
+        const ms = S.transactions.filter(t => t.importId && wbImp.has(t.importId)).map(t => t.date.slice(0, 7)).sort();
+        return { n: ms.length, from: ms[0] || null, to: ms[ms.length - 1] || null };
       },
       setBudget(catId, v) { const c = cat(catId); if (c) { c.budget = v > 0 ? v : null; scheduleSave(); } },
     };
@@ -8806,15 +8826,21 @@ function viewAccounts() {
 }
 
 // ---------------------------------------------------------------- workbook import
+const WB_WHAT = [['both', 'Balance sheet and income statement'], ['main', 'Balance sheet only'], ['inc', 'Income statement only']];
+const wbWhat = () => (WB_WHAT.some(w => w[0] === st.settings.wbWhat) ? st.settings.wbWhat : 'both');
 function viewImport() {
-  const imp = ui.imp;
+  const imp = ui.imp, what = wbWhat(), doMain = what !== 'inc', doInc = what !== 'main';
   let h = `<div class="h-panel" style="margin-bottom:20px"><header><h2>Your Personal Finance workbook</h2></header>
-    <p style="margin:0 0 10px;max-width:80ch">Reads the <b>Main Page</b> sheet (month-end balances, USD/CAD and KRW rates, notes) and the <b>Income Statement</b> sheet (monthly income and spending by category, and the Budget row). The file is read here in your browser; nothing is uploaded.</p>
+    <fieldset class="h-segfield h-wbwhat"><legend>What to import</legend><div class="h-seg" role="radiogroup" aria-label="What to import">
+      ${WB_WHAT.map(([k, l]) => `<label class="${what === k ? 'on' : ''}"><input type="radio" name="wbwhat" value="${k}" data-hwbwhat="${k}" ${what === k ? 'checked' : ''}> ${l}</label>`).join('')}</div></fieldset>
+    <p style="margin:10px 0;max-width:80ch">${doMain ? 'Reads the <b>Main Page</b> sheet: month-end balances, USD/CAD and KRW rates, and notes. ' : ''}${doInc ? 'Reads the <b>Income Statement</b> sheet: monthly income and spending by category, and the Budget row. ' : ''}${doMain && !doInc ? 'The income statement is left alone. ' : ''}${doInc && !doMain ? 'Balances are left alone. ' : ''}The file is read here in your browser; nothing is uploaded.</p>
     <label class="btn primary">Choose workbook…<input type="file" id="wbFile" accept=".xlsx,.xlsb,.xlsm,.xls" hidden></label>
     ${st.imports.length ? `<p class="h-note">Imported before: ${st.imports.slice(-3).map(i => `${esc(i.file)} (${nf0.format(i.values)} values, ${esc(i.from || '')} to ${esc(i.to || '')})`).join('; ')}</p>` : ''}</div>`;
   if (!imp) return h;
   if (imp.error) return h + `<div class="h-callout">${esc(imp.error)}</div>`;
-  const P = imp.main, I = imp.inc;
+  const P = doMain ? imp.main : null, I = doInc ? imp.inc : null;
+  if (doMain && !imp.main) h += `<div class="h-callout">There's no <b>Main Page</b> sheet in ${esc(imp.file)}, so there are no balances to import.</div>`;
+  if (doInc && !imp.inc) h += `<div class="h-callout">There's no <b>Income Statement</b> sheet in ${esc(imp.file)}, so there's no income statement to import.</div>`;
   const accOpts = sel => `<option value="skip" ${sel === 'skip' ? 'selected' : ''}>Skip</option><option value="new" ${sel === 'new' ? 'selected' : ''}>New account</option>` +
     HC.GROUPS.map(([g, label]) => { const list = st.accounts.filter(a => (HC.CATS[a.cat] || HC.CATS.otherA).group === g); return list.length ? `<optgroup label="${esc(label)}">${list.map(a => `<option value="${esc(a.id)}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</optgroup>` : ''; }).join('');
   if (P && !P.error) {
@@ -8845,8 +8871,9 @@ function viewImport() {
   if (I && !I.error) {
     const t = T(); const cats = t ? t.categories() : [];
     const firstTx = t ? t.state.transactions.filter(x => !x.importId || !(t.state.imports.find(i => i.id === x.importId) || {}).workbook).map(x => x.date.slice(0, 7)).sort()[0] : null;
+    const prev = t ? t.workbookTotals() : null;
     h += `<div class="h-panel" style="margin-bottom:20px"><header><h2>Income statement: ${esc(mlabel(I.months[0] || ''))} to ${esc(mlabel(I.months[I.months.length - 1] || ''))}</h2></header>
-      <p class="h-note" style="margin:0 0 10px">Each category's monthly total becomes one entry in Income &amp; spending (account "Workbook history"), so its dashboard and the savings figures here cover those years too. You can remove them as one import there.</p>
+      <p class="h-note" style="margin:0 0 10px">Each category's monthly total becomes one entry in Income &amp; spending (account "Workbook history"), so its dashboard and the savings figures here cover those years too. You can remove them as one import there.${prev && prev.n ? ` <b>Already imported from a workbook:</b> ${nf0.format(prev.n)} monthly totals, ${esc(mlabel(prev.from))} to ${esc(mlabel(prev.to))}. The months in this import replace them, so nothing is counted twice.` : ''}</p>
       <div class="h-wrap"><table class="h-table"><thead><tr><th>Workbook column</th><th>Type</th><th class="n">Months</th><th class="n">Budget</th><th>Category in Income &amp; spending</th></tr></thead><tbody>
       ${I.cats.map(k => { const v = imp.catMap[k.c]; return `<tr${v === 'skip' ? ' class="h-faint"' : ''}><td>${esc(k.name)}</td><td>${k.kind === 'income' ? 'Income' : 'Spending'}</td><td class="n">${Object.keys(k.values).length}</td><td class="n">${k.budget ? nf0.format(k.budget) : ''}</td>
         <td><select data-hcat="${k.c}"><option value="skip" ${v === 'skip' ? 'selected' : ''}>Skip</option><option value="new" ${v === 'new' ? 'selected' : ''}>New category "${esc(k.name)}"</option>${cats.filter(c => c.type === k.kind).map(c => `<option value="${esc(c.id)}" ${c.id === v ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></td></tr>`; }).join('')}
@@ -8855,7 +8882,8 @@ function viewImport() {
       <label class="h-check" style="margin-top:6px"><input type="checkbox" data-hopt="budgets" ${imp.budgets ? 'checked' : ''}> Use the Budget row as monthly budgets</label></div>`;
     imp.firstTx = firstTx;
   } else if (I && I.error) h += `<div class="h-callout">Income statement: ${esc(I.error)}</div>`;
-  h += `<button class="btn primary" data-himport="1">Import</button> <button class="btn" data-himpcancel="1">Cancel</button>`;
+  const can = (P && !P.error) || (I && !I.error);
+  h += `<button class="btn primary" data-himport="1" ${can ? '' : 'disabled'}>${{ both: 'Import balance sheet and income statement', main: 'Import balance sheet', inc: 'Import income statement' }[what]}</button> <button class="btn" data-himpcancel="1">Cancel</button>`;
   return h;
 }
 async function readWorkbook(file) {
@@ -8870,6 +8898,9 @@ async function readWorkbook(file) {
     if (mainName) { const { cells, merges } = HC.cellsFromSheet(wb.Sheets[mainName], XLSX); imp.main = HC.parseMainPage(cells, merges); }
     if (incName) imp.inc = HC.parseIncomeSheet(HC.cellsFromSheet(wb.Sheets[incName], XLSX).cells);
     if (!imp.main && !imp.inc) { ui.imp = { error: `No "Main Page" or "Income Statement" sheet in ${file.name}.` }; render(); return; }
+    // only one of the two sheets in the file: start with that one
+    if (!imp.inc && wbWhat() === 'both') st.settings.wbWhat = 'main';
+    if (!imp.main && wbWhat() === 'both') st.settings.wbWhat = 'inc';
     if (imp.main && !imp.main.error) {
       for (const c of imp.main.cols) { const a = c.skip ? null : HC.matchAccount(st, c); imp.map[c.c] = { target: c.skip ? 'skip' : a ? a.id : 'new', cat: c.cat }; }
       // a margin account split into a CAD and a USD column goes into one account, as one C$ balance
@@ -8888,8 +8919,8 @@ async function readWorkbook(file) {
 }
 function runImport() {
   const imp = ui.imp; if (!imp) return;
-  const msgs = [];
-  if (imp.main && !imp.main.error) {
+  const msgs = [], what = wbWhat();
+  if (what !== 'inc' && imp.main && !imp.main.error) {
     const mapping = {};
     for (const c of imp.main.cols) { const mp = imp.map[c.c]; mapping[c.c] = Object.assign({}, mp, mp.target === 'new' ? { cat: mp.cat || c.cat, ccy: c.ccy, name: c.name, owner: c.owner } : {}); }
     const retire = [];
@@ -8903,7 +8934,7 @@ function runImport() {
     msgs.push(`${nf0.format(res.values)} balances for ${res.months.length} months`);
     if ((imp.pairs || []).some(x => x.on)) msgs.push(`the margin account's CAD and USD parts combined into one C$ balance`);
   }
-  if (imp.inc && !imp.inc.error && T()) {
+  if (what !== 'main' && imp.inc && !imp.inc.error && T()) {
     const t = T(), catMap = {};
     for (const k of imp.inc.cats) {
       let v = imp.catMap[k.c];
@@ -8913,9 +8944,10 @@ function runImport() {
       if (imp.budgets && k.budget > 0) t.setBudget(v, k.budget);
     }
     const rows = HC.incomeRows(imp.inc, catMap, { before: imp.before && imp.firstTx ? imp.firstTx : null });
-    if (rows.length) { t.addMonthlyTotals(rows, { file: imp.file }); msgs.push(`${nf0.format(rows.length)} monthly category totals`); }
+    if (rows.length) { const r = t.addMonthlyTotals(rows, { file: imp.file, replace: true }); msgs.push(`${nf0.format(rows.length)} monthly category totals${r && r.replaced ? ` (replacing ${nf0.format(r.replaced)} from an earlier import)` : ''}`); }
     t.render();
   }
+  if (!msgs.length) { toast('Nothing to import with these choices.'); return; }
   save(); ui.imp = null; ui.view = 'networth'; ui.month = null; firstRun = false;
   render(); toast(`Imported ${msgs.join(' and ')}.`);
 }
@@ -9042,6 +9074,7 @@ function bind() {
     }
     if (t.dataset.hmap) { ui.imp.map[t.dataset.hmap].target = t.value; render(); return; }
     if (t.dataset.hdel) { const k = t.dataset.hdel; ui.dRange[k] = k === 'extras' ? t.checked : t.value; render(); return; }
+    if (t.dataset.hwbwhat) { st.settings.wbWhat = t.dataset.hwbwhat; save(); render(); return; }
     if (t.dataset.hpair !== undefined) { const pr = ui.imp.pairs[+t.dataset.hpair]; pr.on = t.checked; render(); return; }
     if (t.dataset.hpairto !== undefined) { const pr = ui.imp.pairs[+t.dataset.hpairto]; pr.target = t.value; render(); return; }
     if (t.dataset.hmapcat) { ui.imp.map[t.dataset.hmapcat].cat = t.value; return; }
