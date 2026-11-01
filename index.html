@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Master Financial Planner, hosted build 20261101091820 -->
+<!-- Master Financial Planner, hosted build 20261101132843 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1120,6 +1120,43 @@ table.h-hist tr.h-hist-side td, table.h-hist tr.h-hist-side td:first-child { bac
 .h-wbwhat .h-seg label.on:first-child, .h-wbwhat .h-seg label.on:last-child, .h-wbwhat .h-seg label.on { background: var(--btn-ink); color: var(--btn-ink-text); }
 @media (max-width: 640px) { .h-wbwhat .h-seg { display: grid; } .h-wbwhat .h-seg label + label { border-left: 0; border-top: 1px solid var(--rule-strong); } .h-wbwhat .h-seg label { min-height: 36px; } }
 
+/* small phones (rigorous testing, Nov 1) */
+@media (max-width: 420px) {
+  .splitrow { grid-template-columns: 1fr auto; }
+  .splitrow select { grid-column: 1 / -1; }
+  .splitrow input { width: 100%; }
+}
+.bkform input[type=password] { min-height: 36px; }
+/* a wide table's pinned first column can't take most of a small screen, or it covers the columns scrolling under it */
+@media (max-width: 560px) {
+  .tk-wide > table.tk > thead > tr > :first-child, .tk-wide > table.tk > tbody > tr > :first-child { max-width: 42vw; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  table.h-table td:first-child .h-sub { white-space: normal; }
+}
+@media (max-width: 380px) {
+  .inv dialog .movetbl td, .inv dialog .movetbl th { padding: 6px 3px; }
+  .inv dialog .movetbl input[type=text] { width: 60px; }
+  .inv dialog .movetbl .n { font-size: 12px; }
+}
+@media (max-width: 420px) { .h-check { white-space: normal; } }
+@media (max-width: 380px) {
+  .h-tile { padding: 12px; min-width: 0; }
+  .h-tile .value { font-size: 18px; overflow-wrap: anywhere; }
+  .h-tile .label { letter-spacing: .03em; }
+  .section-head { flex-wrap: wrap; }
+  .rank td { padding: 8px 6px; }
+  .rank .barcell, .rank td.share, .rank tfoot td:last-child { display: none; }
+  .rank { table-layout: fixed; }
+  .rank td.amt { width: 84px; }
+  .rank td:first-child { overflow-wrap: anywhere; }
+  .rank .desc-sub, .rank .budget { white-space: normal; }
+  .section-head .spacer { display: none; }
+  .rv .act { flex-wrap: wrap; }
+  .rv .act select { flex: 1 1 100%; min-width: 0; }
+  .inv table td, .inv table th { padding-left: 4px; padding-right: 4px; }
+  .inv .panel { overflow-x: auto; }
+  .h-side-panel select { font-size: 12.5px; }
+}
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#182033">
@@ -1349,13 +1386,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       }
       if (!t.classList.contains('df-text')) return;
       const [v, msg] = check(t, t.value);
+      const dlg = t.closest && t.closest('dialog'), alert = dlg && dlg.querySelector('[role="alert"]');
       if (v === null) {
         e.stopPropagation();
+        if (alert) {
+          // in a form: keep what was typed so it can be fixed, and say what's wrong right there (a toast would sit behind the dialog)
+          t.classList.add('df-bad'); t.setAttribute('aria-invalid', 'true');
+          alert.textContent = msg;
+          return;
+        }
         t.value = t.dataset.dfPrev || '';
         t.classList.add('df-bad'); setTimeout(() => t.classList.remove('df-bad'), 1600);
         say(msg);
         return;
       }
+      if (t.getAttribute('aria-invalid')) { t.removeAttribute('aria-invalid'); t.classList.remove('df-bad'); if (alert && /as a date|future|past|can't be/.test(alert.textContent)) alert.textContent = ''; }
       t.value = v; t.dataset.dfPrev = v;
     }, true);
     document.addEventListener('keydown', e => {
@@ -1670,8 +1715,14 @@ C.num = v => {
   if (!s) return null;
   let neg = false;
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
-  s = s.replace(/[$,\s]|CAD|USD|US\$|C\$/gi, '');
+  s = s.replace(/[$\s\u00a0\u202f']|CAD|USD|US\$|C\$/gi, '').replace(/%$/, ''); // "12%" in a percent box is 12
+  // 1,234.56 or 1.234,56 / 12,50 (a comma for the decimals); anything else with stray dots or commas isn't a number
+  if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s) || /^-?\d+,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(,\d{3})+(\.\d*)?$/.test(s) || !s.includes(',')) s = s.replace(/,/g, '');
+  else return null;
   if (s.endsWith('-')) { neg = true; s = s.slice(0, -1); }
+  if (s.endsWith('.')) s = s.slice(0, -1);
+  if (!/^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return null;
   const n = parseFloat(s);
   if (!isFinite(n)) return null;
   return neg ? -Math.abs(n) : n;
@@ -2872,7 +2923,7 @@ const Core = (() => {
     if (s.startsWith('-')) { neg = !neg; s = s.slice(1); } else if (s.startsWith('+')) s = s.slice(1);
     if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
     else if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(',', '.');
-    else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s) || /^\d+(\.\d+)?$/.test(s) || /^\.\d+$/.test(s)) s = s.replace(/,/g, '');
+    else if (/^\d{1,3}(,\d{3})+(\.\d*)?$/.test(s) || /^\d+(\.\d*)?$/.test(s) || /^\.\d+$/.test(s)) s = s.replace(/,/g, '');
     else return null;
     const n = parseFloat(s);
     if (!isFinite(n)) return null;
@@ -3100,7 +3151,9 @@ const Core = (() => {
     const start = mp.header >= 0 ? mp.header + 1 : 0;
     const data = rows.slice(start);
     let order = mp.dateOrder;
-    if (!order || order === 'auto') order = detectDateOrder(data.map(r => r[mp.date]), mp.ambigOrder || 'MDY').order;
+    const seen = detectDateOrder(data.map(r => r[mp.date]), mp.ambigOrder || 'MDY');
+    // a remembered or chosen order gives way when this file's dates can only be read the other way (15/10/2026)
+    if (!order || order === 'auto' || (!seen.ambiguous && seen.slashed && seen.order !== order)) order = seen.order;
     const txns = [], skipped = [];
     let excluded = 0;
     const exclude = new Set(mp.acctCol >= 0 ? mp.exclude || [] : []);
@@ -3534,7 +3587,12 @@ H.num = v => {
   if (typeof v === 'number') return isFinite(v) ? v : null;
   let s = String(v).trim(); let neg = false;
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
-  s = s.replace(/[$,\s]|CAD|USD|KRW|C\$|US\$|₩/gi, '');
+  s = s.replace(/[$\s\u00a0\u202f']|CAD|USD|KRW|C\$|US\$|₩/gi, '');
+  // 1.234,56 and 12,50 (a comma for the decimals) as well as 1,234.56
+  if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s) || /^-?\d+,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(,\d{3})+(\.\d*)?$/.test(s) || !s.includes(',')) s = s.replace(/,/g, '');
+  else return null;
+  if (s.endsWith('.')) s = s.slice(0, -1);
   if (s.endsWith('-')) { neg = true; s = s.slice(0, -1); }
   if (!/^-?\d*\.?\d+(e-?\d+)?$/i.test(s)) return null;
   const n = parseFloat(s);
@@ -3573,7 +3631,7 @@ H.migrate = (st, invAccounts) => {
   for (const k of ['balances', 'fx', 'notes', 'contrib']) if (!st[k] || typeof st[k] !== 'object') st[k] = {};
   if (!Array.isArray(st.imports)) st.imports = [];
   st.plan = Object.assign(JSON.parse(JSON.stringify(H.PLAN_DEFAULT)), st.plan || {});
-  for (const a of st.accounts) { if (!Array.isArray(a.links)) a.links = []; }
+  for (const a of st.accounts) { if (!Array.isArray(a.links)) a.links = []; if (!H.CATS[a.cat]) a.cat = 'otherA'; if (!a.owner) a.owner = 'J'; }
   H.syncLinks(st, invAccounts || []);
   return st;
 };
@@ -3591,7 +3649,12 @@ H.syncLinks = (st, invAccounts) => {
 
 // ===================================================================== values for a month
 // ctx: { live: {ym, acct, cash} | null, snaps: [{date, acct, cash, fx}] (Investments history), fxAuto: ym -> CAD per USD | null }
-const explicit = (st, ym, id) => { const m = st.balances[ym]; const b = m && m[id]; if (b === undefined || b === null) return null; return typeof b === 'number' ? { v: b, s: 'e' } : b; };
+const explicit = (st, ym, id) => {
+  const m = st.balances[ym]; const b = m && m[id]; if (b === undefined || b === null) return null;
+  if (typeof b === 'number') return isFinite(b) ? { v: b, s: 'e' } : null;
+  const v = typeof b.v === 'number' ? b.v : H.num(b.v); // a hand-edited or old backup might hold text
+  return v === null || !isFinite(v) ? null : (v === b.v ? b : Object.assign({}, b, { v }));
+};
 H.snapFor = (ctx, ym) => {
   if (!ctx || !ctx.snaps) return null;
   let best = null;
@@ -3979,7 +4042,9 @@ H.marginPairs = parsed => {
     if (!best) continue;
     used.add(best.c);
     const inst = [...wa].find(w => marginWords(best.header).has(w));
-    const nice = inst ? inst.charAt(0).toUpperCase() + inst.slice(1) : '';
+    // the broker's name as the workbook writes it (IBKR, Questrade)
+    const asWritten = inst ? (String(a.header).match(new RegExp(`\\b${inst}\\b`, 'i')) || [inst])[0] : '';
+    const nice = asWritten ? (asWritten === asWritten.toLowerCase() ? asWritten.charAt(0).toUpperCase() + asWritten.slice(1) : asWritten) : '';
     pairs.push({ cad: a, usd: best, name: `${nice ? nice + ' margin' : 'Margin account'}${a.owner === 'J' || a.owner === 'C' ? ` (${a.owner})` : ''}` });
   }
   return pairs;
@@ -4430,6 +4495,7 @@ async function refreshMarket(force, extraStart) {
   } finally {
     status.busy = false; $('#refreshBtn').disabled = false;
     recompute(); render();
+    if (status.rollAfter) { status.rollAfter = false; setTimeout(() => window.dispatchEvent(new Event('mfp:rolldate')), 0); }
     const net = status.errors.filter(e => NET_FAIL.test(e)).length;
     status.offline = status.errors.length > 0 && (navigator.onLine === false || net >= status.errors.length / 2);
     if (status.offline) { renderStatus(); toast("Couldn't reach the market data services (TMX, Bank of Canada). Check your internet connection and try again; values are shown with the data saved last time.", { timeout: 10000 }); }
@@ -5472,7 +5538,17 @@ function manualDialog(id) {
 function bind() {
   $('#navInv').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (!b) return; S.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
   $('#ccySeg').addEventListener('click', e => { const b = e.target.closest('button[data-ccy]'); if (!b) return; S.ccy = b.dataset.ccy; state.settings.reportCcy = S.ccy; save(); render(); });
-  $('#valDate').addEventListener('change', e => { const v = e.target.value; if (!v) { e.target.value = S.valDate; return; } if (v === S.valDate) return; S.valDate = v; recompute(); render(); refreshMarket(false); });
+  $('#valDate').addEventListener('change', e => { const v = e.target.value; if (!v) { e.target.value = S.valDate; return; } if (v === S.valDate) return; S.valDate = v; S.valAuto = v === C.lastBusinessDay(C.iso(new Date())); recompute(); render(); refreshMarket(false); });
+  // left open past midnight (a phone keeps the app running for days): a valuation date that was "the latest trading
+  // day" moves on with the calendar, so values, the rate and the daily snapshot stay current. A date you picked stays.
+  const rollDate = () => {
+    if (document.hidden || S.valAuto === false) return;
+    if (status.busy) { status.rollAfter = true; return; } // a refresh is running: try again when it ends
+    const lb = C.lastBusinessDay(C.iso(new Date()));
+    if (S.valDate === lb) return;
+    S.valDate = lb; recompute(); if (window.Shell && window.Shell.mode === 'inv') render(); refreshMarket(false);
+  };
+  document.addEventListener('visibilitychange', rollDate); window.addEventListener('focus', rollDate); window.addEventListener('mfp:rolldate', rollDate); setInterval(rollDate, 10 * 60e3);
   $('#refreshBtn').addEventListener('click', () => refreshMarket(true));
   $('#invFilters').addEventListener('click', e => {
     const b = e.target.closest('.chip'); if (!b) return;
@@ -5570,7 +5646,7 @@ function bind() {
       if (f === 'asOf') p.asOf = t.value || null;
       else if (f === 'units') {
         const v = C.num(t.value);
-        if (t.value.trim() && v === null) { window.Shell.toast('Not a number of shares'); t.value = ''; return; }
+        if (t.value.trim() && v === null) { window.Shell.toast(`"${t.value.trim()}" isn't a number of shares. It was left as it was.`); t.value = p.units !== null && p.units !== undefined ? p.units : ''; return; }
         p.units = v;
         save(); recompute(); setTimeout(render, 0);
         const sec = C.getSec(p.secId, state);
@@ -5579,7 +5655,7 @@ function bind() {
       }
       else {
         const v = C.num(t.value);
-        if (t.value.trim() && v === null) { toast('Not a number'); t.value = ''; return; }
+        if (t.value.trim() && v === null) { window.Shell.toast(`"${t.value.trim()}" isn't a number. It was left as it was.`); t.value = p[f] !== null && p[f] !== undefined && C.num(p[f]) !== null ? (f === 'mv' ? plain(C.num(p[f]), 2) : p[f]) : ''; return; }
         p[f] = v;
         if ((f === 'mv' || f === 'qty') && v !== null && !p.asOf) p.asOf = state.settings.entryDate || C.iso(new Date());
       }
@@ -5761,12 +5837,23 @@ start();
     for (const k of ['categories', 'transactions', 'imports', 'rules', 'reviewLog']) if (!Array.isArray(st[k])) st[k] = k === 'categories' ? f.categories : [];
     if (!st.memory || typeof st.memory !== 'object') st.memory = {};
     if (!st.formats || typeof st.formats !== 'object') st.formats = {};
+    // a hand-edited or very old backup: repair what can be repaired, leave out what can't be read
+    const okDate = d => { const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(d || '')); if (!m) return null; const y = +m[1], mo = Math.min(12, Math.max(1, +m[2])), last = new Date(y, mo, 0).getDate(); return C.iso(y, mo, Math.min(last, Math.max(1, +m[3]))); };
+    st.transactions = st.transactions.filter(t => t && typeof t === 'object' && okDate(t.date) && isFinite(+t.amount));
     st.transactions.forEach(t => {
       if (!t.id) t.id = C.uid('t');
+      t.date = okDate(t.date);
+      t.amount = +t.amount;
+      if (typeof t.desc !== 'string') t.desc = String(t.desc || '');
+      if (typeof t.account !== 'string' || !t.account.trim()) t.account = 'Unnamed account';
       if (!t.key) t.key = C.merchantKey(t.desc);
       if (!t.src) t.src = 'none';
-      t.amount = +t.amount;
+      if (t.splits && (!Array.isArray(t.splits) || t.splits.length < 2 || t.splits.some(x => !x || !isFinite(+x.amount)))) delete t.splits;
+      if (t.splits) t.splits.forEach(x => { x.amount = +x.amount; });
     });
+    st.categories = st.categories.filter(c => c && c.id && c.name);
+    st.categories.forEach(c => { if (!['expense', 'income', 'transfer'].includes(c.type)) c.type = 'expense'; if (!/^#[0-9a-f]{6}$/i.test(c.color || '')) c.color = C.PALETTE[0]; });
+    if (!st.settings.accountCcy || typeof st.settings.accountCcy !== 'object') delete st.settings.accountCcy;
     st.version = 1;
     return st;
   }
@@ -6449,7 +6536,7 @@ start();
       list = list.filter(t => t.desc.toUpperCase().includes(q) || t.account.toUpperCase().includes(q) || (t.splits && t.splits.length ? t.splits.map(x => catName(x.cat)).join(' ') : catName(t.cat)).toUpperCase().includes(q) || Math.abs(t.amount).toFixed(2).includes(q) || (t.note || '').toUpperCase().includes(q) || (t.manual && 'MANUAL ENTRY'.includes(q)));
     }
     if (f.cat === 'review') list = list.filter(needsReview);
-    else if (f.cat === 'uncat') list = list.filter(t => !t.cat && !(t.splits && t.splits.length));
+    else if (f.cat === 'uncat') list = list.filter(t => (t.splits && t.splits.length ? t.splits.some(x => !x.cat) : !t.cat));
     else if (f.cat === 'manual') list = list.filter(t => t.manual);
     else if (f.cat === 'notes') list = list.filter(t => t.note);
     else if (f.cat === 'split') list = list.filter(t => t.splits && t.splits.length);
@@ -6544,7 +6631,7 @@ start();
     const key = t.key;
     const prev = new Map(S.transactions.filter(x => x.key === key && x.id !== id && x.src !== 'manual').map(x => [x.id, x.cat]));
     assign([id], catId);
-    const others = S.transactions.filter(x => x.key === key && x.id !== id);
+    const others = S.transactions.filter(x => x.key === key && x.id !== id && !(x.splits && x.splits.length)); // a split one keeps its parts
     const followers = [...prev.keys()].filter(xid => { const x = txById(xid); return x && x.cat === catId && prev.get(xid) !== catId; });
     const differ = others.filter(x => x.cat !== catId);
     let msg = catId ? `Filed under ${catName(catId)}.` : 'Category removed.';
@@ -6654,6 +6741,8 @@ start();
         n++;
         t.splits.forEach(x => { if (x.cat === id) x.cat = to; });
         if (t.cat === id) t.cat = to;
+        const cs = new Set(t.splits.map(x => x.cat || null));
+        if (cs.size === 1) { t.cat = [...cs][0]; delete t.splits; if (!t.cat) { t.src = 'none'; } }
         return;
       }
       if (t.cat !== id) return;
@@ -6697,7 +6786,7 @@ start();
     C.recategorize(S);
     scheduleSave();
     render(); renderBadge();
-    toast(`Deleted ${c.name}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`${c.name} is back.`); } } });
+    toast(`Deleted ${c.name}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`${c.name} is back.`); } }, group: 'cat' });
   }
 
   // put deleted transactions (and the import records they came with) back
@@ -6745,7 +6834,7 @@ start();
     C.recategorize(S);
     scheduleSave();
     render(); renderBadge();
-    toast(`Merged ${from.name} into ${to.name}${n ? `: ${plural(n, 'transaction')} moved` : ''}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`Undone. ${from.name} and ${to.name} are separate again.`); } } });
+    toast(`Merged ${from.name} into ${to.name}${n ? `: ${plural(n, 'transaction')} moved` : ''}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`Undone. ${from.name} and ${to.name} are separate again.`); } }, group: 'cat' });
   }
   function mergeDialog(fromId, toId) {
     const d = $('#genDialog');
@@ -7335,7 +7424,8 @@ start();
     S.imports.push(imp);
     if (remember && M.sig) {
       const { header, ...mapping } = M.mp;
-      if (!mapping.dateOrder || mapping.dateOrder === 'auto') mapping.dateOrder = res.order;
+      // remember the day/month order only for slashed dates (an ISO date says nothing about it)
+      if (!mapping.dateOrder || mapping.dateOrder === 'auto') mapping.dateOrder = C.detectDateOrder ? (C.detectDateOrder(M.rows.slice(Math.max(0, M.mp.header + 1)).map(r => r[mapping.date])).slashed ? res.order : 'auto') : res.order;
       mapping.seenAccts = C.listAccounts(M.rows, M.mp).map(a => a.suffix);
       const prevF = S.formats[M.sig] || {};
       const usedBefore = prevF.accounts || (prevF.account ? [prevF.account] : []);
@@ -7574,7 +7664,18 @@ start();
       if (row && e.target.matches('[data-sp-cat]')) parts[+row.dataset.i].cat = e.target.value;
       if (e.target.id === 'txAcct') showCcy();
     };
-    d.onkeydown = e => { if (e.key === 'Enter' && (e.target.matches('input') && !e.target.closest('.df') || (e.target.matches('textarea') && (e.metaKey || e.ctrlKey)))) { e.preventDefault(); save(false); } };
+    d.onkeydown = e => {
+      if (e.key !== 'Enter') return;
+      // in a split, Enter moves on to the next part instead of saving half-typed parts
+      const row = e.target.closest('.splitrow');
+      if (row && e.target.matches('input')) {
+        e.preventDefault();
+        const next = $(`.splitrow[data-i="${+row.dataset.i + 1}"] select`, d);
+        if (next) next.focus(); else if (Math.abs(left()) < 0.005) save(false); else $('[data-sp="add"]', d).focus();
+        return;
+      }
+      if (e.target.matches('input') && !e.target.closest('.df') || (e.target.matches('textarea') && (e.metaKey || e.ctrlKey))) { e.preventDefault(); save(false); }
+    };
     d.oncancel = null;
     if (!d.open) d.showModal();
     $('#txAmt', d).focus();
@@ -7621,10 +7722,13 @@ start();
       if (last) last.focus();
     });
   }
-  function toast(msg, { action = null, timeout = 6500 } = {}) {
+  function toast(msg, { action = null, timeout = 6500, group = null } = {}) {
     const box = $('#toasts');
+    // an older Undo of the same kind would roll back this change too (category changes restore a whole snapshot): drop it
+    if (group) $$(`.toast[data-group="${group}"]`, box).forEach(t => t.remove());
     const el = document.createElement('div');
     el.className = 'toast';
+    if (group) el.dataset.group = group;
     el.setAttribute('role', 'status');
     el.innerHTML = `<span>${esc(msg)}</span>${action ? `<button class="btn">${esc(action.label)}</button>` : ''}<button class="x" aria-label="Dismiss">×</button>`;
     const kill = () => el.remove();
@@ -7780,7 +7884,7 @@ start();
       if (mdel) {
         const key = mdel.closest('tr').dataset.mem, snap = catSnapshot();
         delete S.memory[key]; C.recategorize(S); scheduleSave(); render(); renderBadge();
-        toast(`Forgot ${key}. Transactions you confirmed keep their category.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`${key} is remembered again.`); } } }); return;
+        toast(`Forgot ${key}. Transactions you confirmed keep their category.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast(`${key} is remembered again.`); } }, group: 'cat' }); return;
       }
       const mpg = t.closest('[data-mem-page]');
       if (mpg) { ui.memPage += +mpg.dataset.memPage; render(); return; }
@@ -7849,12 +7953,12 @@ start();
       if (t.matches('[data-cat-type]')) { cat(t.closest('tr').dataset.catId).type = t.value; C.recategorize(S); scheduleSave(); render(); return; }
       if (t.matches('[data-mem-cat]')) {
         const key = t.closest('tr').dataset.mem, c = t.value, snap = catSnapshot();
-        const ids = S.transactions.filter(x => x.key === key).map(x => x.id);
+        const ids = S.transactions.filter(x => x.key === key && !(x.splits && x.splits.length)).map(x => x.id);
         const n = Object.values(S.memory[key].counts).reduce((a, x) => a + x, 0);
         S.memory[key] = { counts: { [c]: Math.max(1, n) }, last: c, updated: Date.now() };
         ids.forEach(id => { const x = txById(id); x.cat = c; x.src = 'manual'; x.conf = 1; });
         C.recategorize(S); scheduleSave(); render();
-        toast(`${key} now files under ${catName(c)}${ids.length ? `, including ${plural(ids.length, 'existing transaction')}` : ''}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast('Undone.'); } } }); return;
+        toast(`${key} now files under ${catName(c)}${ids.length ? `, including ${plural(ids.length, 'existing transaction')}` : ''}.`, { action: { label: 'Undo', fn: () => { catRestore(snap); toast('Undone.'); } }, group: 'cat' }); return;
       }
       if (t.matches('[data-del]')) { ui.del[t.dataset.del] = t.value; updateDelRange(); return; }
       if (t.matches('[data-acc-ccy]')) {
@@ -7867,11 +7971,13 @@ start();
         const old = t.closest('tr').dataset.acc, v = t.value.trim();
         if (!v || v === old) { t.value = old; return; }
         const merging = accounts().includes(v);
+        if (merging && accCcy(old) !== accCcy(v)) { t.value = old; toast(`${old} is in ${accCcy(old)} and ${v} is in ${accCcy(v)}, so they can't be merged. Change one account's currency first (or rename it to a new name).`, { timeout: 9000 }); return; }
         if (!merging && accCcy(old) !== homeCcy()) { setAccCcy(v, accCcy(old)); setAccCcy(old, null); }
         S.transactions.forEach(x => { if (x.account === old) x.account = v; });
         S.imports.forEach(i => { if (i.account === old) i.account = v; });
         Object.values(S.formats).forEach(f => { if (f.account === old) f.account = v; });
         if (S.settings.account === old) S.settings.account = v;
+        if (S.settings.lastManualAccount === old) S.settings.lastManualAccount = v;
         scheduleSave(); render(); toast(merging ? `Merged ${old} into ${v}.` : `Renamed ${old} to ${v}.`); return;
       }
       if (t.matches('[data-setting]')) {
@@ -8498,7 +8604,7 @@ function balDelPanel() {
       <label>Which<select id="hdKind" data-hdel="kind">${[['all', 'Typed and imported'], ['imported', 'Imported from the workbook only'], ['entered', 'Typed in the app only']].map(([v, l]) => `<option value="${v}"${v === r.d.kind ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
     ${r.d.acc === 'all' && r.d.kind === 'all' ? `<label class="h-check" style="margin-top:10px"><input type="checkbox" id="hdExtras" data-hdel="extras" ${r.d.extras ? 'checked' : ''}> Also those months' exchange rates and notes</label>` : ''}
-    <p class="h-delsum" id="hdSum">${sum.html}</p>
+    <p class="h-delsum" id="hdSum" aria-live="polite">${sum.html}</p>
     <button class="btn danger" data-hdelgo="1" ${n ? '' : 'disabled'}>${n ? `Delete ${nf0.format(r.list.length || r.contrib.length)} ${r.list.length ? `balance${r.list.length === 1 ? '' : 's'}` : `contribution${r.contrib.length === 1 ? '' : 's'}`}…` : 'Delete'}</button>
     <p class="h-note">Values that come from the Investments mode aren't stored here (delete those snapshots in Investments &gt; History). A month left without a balance shows the last earlier one carried forward, greyed, as usual. You can undo right after, and a restore point is saved first.</p></div>`;
 }
@@ -8637,7 +8743,8 @@ function contribDialog(id) {
       save(); d.close(); render(); toast(`Saved ${n} month${n === 1 ? '' : 's'} of contributions for ${a.name}.`);
     }
   };
-  d.onkeydown = null; d.onchange = null; d.oncancel = null;
+  d.onkeydown = e => { if (e.key !== 'Enter' || !e.target.matches('input')) return; e.preventDefault(); $(e.target.id === 'ctAmt' ? '[data-ct="fill"]' : '[data-ct="save"]', d).click(); };
+  d.onchange = null; d.oncancel = null;
   if (!d.open) d.showModal();
   const first = $('[data-ctm]', d); if (first) first.focus();
 }
@@ -8841,8 +8948,10 @@ function viewAccounts() {
 // ---------------------------------------------------------------- workbook import
 const WB_WHAT = [['both', 'Balance sheet and income statement'], ['main', 'Balance sheet only'], ['inc', 'Income statement only']];
 const wbWhat = () => (WB_WHAT.some(w => w[0] === st.settings.wbWhat) ? st.settings.wbWhat : 'both');
+// what this file can give: a workbook with one of the two sheets starts on that one (without changing your usual choice)
+const effWhat = imp => { const w = wbWhat(); if (!imp || imp.error || w !== 'both') return w; return !imp.inc ? 'main' : !imp.main ? 'inc' : w; };
 function viewImport() {
-  const imp = ui.imp, what = wbWhat(), doMain = what !== 'inc', doInc = what !== 'main';
+  const imp = ui.imp, what = effWhat(imp), doMain = what !== 'inc', doInc = what !== 'main';
   let h = `<div class="h-panel" style="margin-bottom:20px"><header><h2>Your Personal Finance workbook</h2></header>
     <fieldset class="h-segfield h-wbwhat"><legend>What to import</legend><div class="h-seg" role="radiogroup" aria-label="What to import">
       ${WB_WHAT.map(([k, l]) => `<label class="${what === k ? 'on' : ''}"><input type="radio" name="wbwhat" value="${k}" data-hwbwhat="${k}" ${what === k ? 'checked' : ''}> ${l}</label>`).join('')}</div></fieldset>
@@ -8877,7 +8986,7 @@ function viewImport() {
       ${P.cols.map(c => { const mp = imp.map[c.c]; const lastM = Object.keys(c.values).sort().pop();
         return `<tr${mp.target === 'skip' ? ' class="h-faint"' : ''}><td>${esc(c.header)}${c.group ? `<span class="h-sub">${esc(c.group)}</span>` : ''}${c.derived ? '<span class="h-sub">a formula (total), skipped</span>' : ''}</td><td>${esc(c.ccy)}</td><td class="n">${c.n}</td><td class="n">${lastM ? `${nf0.format(Math.round(c.values[lastM]))}<span class="h-sub">${esc(mlabel(lastM))}</span>` : ''}</td>
           <td>${pairOf(c.c) ? `<span class="h-badge auto" title="Combined with the other part of the margin account">Combined into ${esc(accName(pairOf(c.c).target) || pairOf(c.c).name + ' (new)')}</span>` : `<select data-hmap="${c.c}" aria-label="Destination for ${esc(c.header)}">${accOpts(mp.target)}</select>`}</td>
-          <td>${mp.target === 'new' && !pairOf(c.c) ? `<select data-hmapcat="${c.c}">${Object.entries(HC.CATS).map(([k, x]) => `<option value="${k}" ${k === (mp.cat || c.cat) ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select>` : ''}</td></tr>`; }).join('')}
+          <td>${mp.target === 'new' && !pairOf(c.c) ? `<select data-hmapcat="${c.c}" aria-label="Category for the new account ${esc(c.name)}">${Object.entries(HC.CATS).map(([k, x]) => `<option value="${k}" ${k === (mp.cat || c.cat) ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select>` : ''}</td></tr>`; }).join('')}
       </tbody></table></div>
       <label class="h-check" style="margin-top:10px"><input type="checkbox" data-hopt="overwrite" ${imp.overwrite ? 'checked' : ''}> Replace values I've typed in the app</label></div>`;
   } else if (P && P.error) h += `<div class="h-callout">Balances: ${esc(P.error)}</div>`;
@@ -8889,14 +8998,15 @@ function viewImport() {
       <p class="h-note" style="margin:0 0 10px">Each category's monthly total becomes one entry in Income &amp; spending (account "Workbook history"), so its dashboard and the savings figures here cover those years too. You can remove them as one import there.${prev && prev.n ? ` <b>Already imported from a workbook:</b> ${nf0.format(prev.n)} monthly totals, ${esc(mlabel(prev.from))} to ${esc(mlabel(prev.to))}. The months in this import replace them, so nothing is counted twice.` : ''}</p>
       <div class="h-wrap"><table class="h-table"><thead><tr><th>Workbook column</th><th>Type</th><th class="n">Months</th><th class="n">Budget</th><th>Category in Income &amp; spending</th></tr></thead><tbody>
       ${I.cats.map(k => { const v = imp.catMap[k.c]; return `<tr${v === 'skip' ? ' class="h-faint"' : ''}><td>${esc(k.name)}</td><td>${k.kind === 'income' ? 'Income' : 'Spending'}</td><td class="n">${Object.keys(k.values).length}</td><td class="n">${k.budget ? nf0.format(k.budget) : ''}</td>
-        <td><select data-hcat="${k.c}"><option value="skip" ${v === 'skip' ? 'selected' : ''}>Skip</option><option value="new" ${v === 'new' ? 'selected' : ''}>New category "${esc(k.name)}"</option>${cats.filter(c => c.type === k.kind).map(c => `<option value="${esc(c.id)}" ${c.id === v ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></td></tr>`; }).join('')}
+        <td><select data-hcat="${k.c}" aria-label="Category in Income &amp; spending for ${esc(k.name)}"><option value="skip" ${v === 'skip' ? 'selected' : ''}>Skip</option><option value="new" ${v === 'new' ? 'selected' : ''}>New category "${esc(k.name)}"</option>${cats.filter(c => c.type === k.kind).map(c => `<option value="${esc(c.id)}" ${c.id === v ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></td></tr>`; }).join('')}
       </tbody></table></div>
       ${firstTx ? `<label class="h-check" style="margin-top:10px"><input type="checkbox" data-hopt="before" ${imp.before ? 'checked' : ''}> Only months before ${esc(mlong(firstTx))}, when your imported bank transactions start</label><br>` : ''}
       <label class="h-check" style="margin-top:6px"><input type="checkbox" data-hopt="budgets" ${imp.budgets ? 'checked' : ''}> Use the Budget row as monthly budgets</label></div>`;
     imp.firstTx = firstTx;
   } else if (I && I.error) h += `<div class="h-callout">Income statement: ${esc(I.error)}</div>`;
-  const can = (P && !P.error) || (I && !I.error);
-  h += `<button class="btn primary" data-himport="1" ${can ? '' : 'disabled'}>${{ both: 'Import balance sheet and income statement', main: 'Import balance sheet', inc: 'Import income statement' }[what]}</button> <button class="btn" data-himpcancel="1">Cancel</button>`;
+  const okM = !!(P && !P.error), okI = !!(I && !I.error);
+  // the button says what will actually be imported (a sheet that couldn't be read is left out)
+  h += `<button class="btn primary" data-himport="1" ${okM || okI ? '' : 'disabled'}>${okM && okI ? 'Import balance sheet and income statement' : okM ? 'Import balance sheet' : okI ? 'Import income statement' : 'Nothing to import'}</button> <button class="btn" data-himpcancel="1">Cancel</button>`;
   return h;
 }
 async function readWorkbook(file) {
@@ -8911,9 +9021,6 @@ async function readWorkbook(file) {
     if (mainName) { const { cells, merges } = HC.cellsFromSheet(wb.Sheets[mainName], XLSX); imp.main = HC.parseMainPage(cells, merges); }
     if (incName) imp.inc = HC.parseIncomeSheet(HC.cellsFromSheet(wb.Sheets[incName], XLSX).cells);
     if (!imp.main && !imp.inc) { ui.imp = { error: `No "Main Page" or "Income Statement" sheet in ${file.name}.` }; render(); return; }
-    // only one of the two sheets in the file: start with that one
-    if (!imp.inc && wbWhat() === 'both') st.settings.wbWhat = 'main';
-    if (!imp.main && wbWhat() === 'both') st.settings.wbWhat = 'inc';
     if (imp.main && !imp.main.error) {
       for (const c of imp.main.cols) { const a = c.skip ? null : HC.matchAccount(st, c); imp.map[c.c] = { target: c.skip ? 'skip' : a ? a.id : 'new', cat: c.cat }; }
       // a margin account split into a CAD and a USD column goes into one account, as one C$ balance
@@ -8932,7 +9039,7 @@ async function readWorkbook(file) {
 }
 function runImport() {
   const imp = ui.imp; if (!imp) return;
-  const msgs = [], what = wbWhat();
+  const msgs = [], what = effWhat(imp);
   if (what !== 'inc' && imp.main && !imp.main.error) {
     const mapping = {};
     for (const c of imp.main.cols) { const mp = imp.map[c.c]; mapping[c.c] = Object.assign({}, mp, mp.target === 'new' ? { cat: mp.cat || c.cat, ccy: c.ccy, name: c.name, owner: c.owner } : {}); }
@@ -9276,7 +9383,7 @@ async function restorePick() {
       <button class="btn" data-sx="file">Choose a backup file…</button>
       <h4 class="rp-h">Restore points</h4>
       <p class="small muted" style="margin:0 0 8px">This browser saves one each day you use the app, and before big changes (restoring a backup, erasing, or sync bringing in changes from another device). They're kept for 30 days, on this device only.</p>
-      ${list.length ? `<ul class="rp-list">${list.map(p => `<li><div><b>${esc(when(p.id))}</b><span>${esc(p.reason)} · ${esc(sumText(p.sum || {}))}</span></div>
+      ${!RP.ok() ? '<p class="rp-none">This browser doesn\'t allow the storage restore points need (a private window, for example). Download backups instead.</p>' : list.length ? `<ul class="rp-list">${list.map(p => `<li><div><b>${esc(when(p.id))}</b><span>${esc(p.reason)} · ${esc(sumText(p.sum || {}))}</span></div>
         <button class="btn sm" data-rp-go="${p.id}">Go back to this</button><button class="iconbtn" data-rp-dl="${p.id}" title="Download as a backup file" aria-label="Download the ${esc(when(p.id))} restore point as a backup file"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M2.5 10.5v3h11v-3"/></svg></button></li>`).join('')}</ul>`
         : '<p class="rp-none">None yet. The first one is saved today.</p>'}
     </div>
@@ -9360,6 +9467,7 @@ const RP = (() => {
   }));
   const run = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction('points', mode); const q = fn(t.objectStore('points')); t.oncomplete = () => res(q ? q.result : undefined); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); };
   return {
+    ok: () => { try { return typeof indexedDB !== 'undefined' && !!indexedDB; } catch (e) { return false; } }, // some private windows have none
     list: async () => ((await run('readonly', st => st.getAll())) || []).sort((a, b) => b.id - a.id),
     get: id => run('readonly', st => st.get(id)),
     put: p => run('readwrite', st => st.put(p)),
@@ -9369,7 +9477,7 @@ const RP = (() => {
 const allReady = () => !!(window.__tally && window.__tally.state && window.HomeApp && window.HomeApp.state && window.ExposureApp && window.ExposureApp.ready);
 let rpBusy = null;
 async function restorePoint(reason, { minGap = 0 } = {}) {
-  if (window.__mfpInactive || !allReady() || !SCx()) return null;
+  if (window.__mfpInactive || !allReady() || !SCx() || !RP.ok()) return null;
   if (rpBusy) await rpBusy.catch(() => {});
   rpBusy = (async () => {
     const data = backupData(), sum = summaryOf(data);
@@ -9398,6 +9506,7 @@ async function restorePoint(reason, { minGap = 0 } = {}) {
 }
 // one a day, checked when the app opens and every hour while it stays open
 async function dailyPoint() {
+  if (!RP.ok()) return;
   try {
     const list = await RP.list();
     const today = new Date().toDateString();
@@ -9665,6 +9774,7 @@ async function run(first) {
     hist = SC.mergeHistory(first ? [] : meta.histBase, local.investments.history, parts.investments.data.history);
   }
 
+  const preBase = JSON.parse(JSON.stringify(meta.base || {})), preHist = meta.histBase;
   // about to replace what's here with another device's copy: keep a restore point first (at most hourly for routine updates)
   const pulling = SC.PARTS.filter(p => plan[p] === 'pull');
   if (pulling.length && window.Shell && window.Shell.restorePoint) await window.Shell.restorePoint('Before sync brought in changes', { minGap: pulling.some(p => chosen[p]) || first ? 0 : 3600e3 }).catch(() => {});
@@ -9692,17 +9802,29 @@ async function run(first) {
       }
     }
   }
+  // Two devices syncing at the same moment both read the same copy and both write: the second write would wipe out the
+  // first device's changes. So: don't write over a copy that changed since it was read (a conflict question can sit open
+  // for a while), and after writing, check nobody wrote straight after. Either way this device's changes stay marked as
+  // not yet synced and it syncs again, which then sees both sides changed and asks, instead of losing one.
+  let lost = false;
   if (upload) {
-    const doc = { app: 'mfp', v: 1, updatedAt: now, by: me(), parts: out };
-    const text = await SC.pack(doc, meta.pass);
-    if (!meta.fileId) { const f = await D.create(); meta.fileId = f.id; }
-    const w = await D.write(meta.fileId, text);
-    meta.remoteModified = (w && w.modifiedTime) || '';
+    if (file) { const cur = await D.info(meta.fileId).catch(() => null); if (cur && cur.modifiedTime !== file.modifiedTime) lost = true; }
+    if (!lost) {
+      const doc = { app: 'mfp', v: 1, updatedAt: now, by: me(), parts: out };
+      const text = await SC.pack(doc, meta.pass);
+      if (!meta.fileId) { const f = await D.create(); meta.fileId = f.id; }
+      const w = await D.write(meta.fileId, text);
+      meta.remoteModified = (w && w.modifiedTime) || '';
+      await new Promise(r => setTimeout(r, 300 + Math.random() * 400));
+      const after = await D.info(meta.fileId).catch(() => null);
+      if (after && meta.remoteModified && after.modifiedTime !== meta.remoteModified) lost = true;
+    }
   } else meta.remoteModified = file.modifiedTime;
-  // what both sides look like now
-  for (const p of SC.PARTS) meta.base[p] = { local: await SC.hashPart(p, PARTS[p].get()), remote: out[p].hash };
+  // what both sides look like now (a part whose upload was lost keeps its old base, so it counts as changed here)
+  for (const p of SC.PARTS) meta.base[p] = lost && plan[p] === 'push' ? preBase[p] : { local: await SC.hashPart(p, PARTS[p].get()), remote: out[p].hash };
+  if (lost) { meta.remoteModified = ''; again = true; }
   const ih = PARTS.investments.get();
-  meta.histBase = ((ih && ih.history) || []).map(SC.histKey).sort();
+  meta.histBase = lost ? preHist : ((ih && ih.history) || []).map(SC.histKey).sort();
   meta.lockState = meta.pass ? 'locked' : 'open';
   meta.changed = {};
   saveMeta();
@@ -10359,6 +10481,16 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
     const ro = new MutationObserver(syncRoute);
     ['#modes', '#navAll', '#navInc', '#navInv'].forEach(s => { const el = $(s); if (el) ro.observe(el, { attributes: true, subtree: true, attributeFilter: ['aria-current', 'aria-selected'] }); });
     window.addEventListener('resize', () => requestAnimationFrame(measure));
+    // every dialog is announced by its title: the first heading inside it names it
+    let dlgN = 0;
+    const nameDialog = d => {
+      if (!d.open || d.getAttribute('aria-label')) return;
+      const h = d.querySelector('h1, h2, h3'); if (!h) return;
+      if (!h.id) h.id = 'dlg-title-' + (++dlgN);
+      d.setAttribute('aria-labelledby', h.id);
+    };
+    new MutationObserver(ms => { for (const m of ms) if (m.target.tagName === 'DIALOG') nameDialog(m.target); else { const d = m.target.closest && m.target.closest('dialog[open]'); if (d) nameDialog(d); } })
+      .observe(document.body, { attributes: true, attributeFilter: ['open'], subtree: true, childList: true });
     scan();
     try { // modes that finished loading before this script ran
       if (window.HomeApp && window.HomeApp.state) readyModes.add('all');
